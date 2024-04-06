@@ -4,5 +4,7 @@ node_modules
 *.tsbuildinfo
 .vercel
 .next
+.env
+.env.local
 out
 next-env.d.ts

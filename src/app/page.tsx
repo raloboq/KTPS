@@ -1,12 +1,3 @@
-import { Room } from "@/app/Room";
-import { CollaborativeEditor } from "@/components/CollaborativeEditor";
-
-export default function Home() {
-  return (
-    <main>
-      <Room>
-        <CollaborativeEditor />
-      </Room>
-    </main>
-  );
-}
+export default function Page() {
+    return <h1>Hello, TKPS</h1>
+  }
