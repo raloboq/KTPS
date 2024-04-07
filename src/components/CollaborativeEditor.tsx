@@ -55,6 +55,10 @@ function TiptapEditor({ doc, provider }: EditorProps) {
         class: styles.editor,
       },
     },
+    onUpdate: ({ editor }) => {
+      const json = editor.getJSON()
+      // send the content to an API here
+    },
     extensions: [
       StarterKit.configure({
         // The Collaboration extension comes with its own history handling
