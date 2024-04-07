@@ -57,6 +57,7 @@ function TiptapEditor({ doc, provider }: EditorProps) {
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON()
+      console.log(json)
       // send the content to an API here
     },
     extensions: [
