@@ -68,7 +68,7 @@ import { useSearchParams } from 'next/navigation';
 import { ClientSideSuspense } from '@liveblocks/react';
 import { Loading } from '@/components/Loading';
 import { useRouter } from 'next/navigation';
-import { getExampleRoomId } from '@/lib/getExampleRoomId';
+//import { getExampleRoomId } from '@/lib/getExampleRoomId';
 import UseRoomId from './UseRoomId';
 
 export function Room({ children }: { children: ReactNode }) {
