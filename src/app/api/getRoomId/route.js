@@ -1,4 +1,4 @@
-import pool from '../../../lib/db.server';
+/*import pool from '../../../lib/db.server';
 
 export async function GET(request) {
   try {
@@ -31,4 +31,4 @@ export async function GET(request) {
   }
 }
 
-export const GET = GET;
+export const GET = GET;*/
