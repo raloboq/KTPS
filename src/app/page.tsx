@@ -18,7 +18,7 @@ export default function Page() {
   const [text2, setText2] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Handle form submission logic here
     console.log('Text 1:', text1);
