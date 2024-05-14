@@ -93,7 +93,7 @@ export function Room({ children }: { children: ReactNode }) {
   const { RoomId, loading, error } = UseRoomId(roomId);
 
   if (loading) return <Loading />;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error: {(error as Error).message}</div>;
 
   /*const exampleRoomId = useMemo(async () => {
     try {
