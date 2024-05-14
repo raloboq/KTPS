@@ -23,7 +23,7 @@ export default function ThinkPage() {
     }
   }, [timeRemaining, router]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Handle form submission logic here
     console.log('Thought:', thought);
