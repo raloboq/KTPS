@@ -62,7 +62,7 @@ function useExampleRoomId(roomId: string) {
 }
 */
 'use client';
-import { ReactNode, useMemo, useState, useEffect } from 'react';
+import { ReactNode, useMemo, useState, useEffect, Suspense } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
 import { useSearchParams } from 'next/navigation';
 import { ClientSideSuspense } from '@liveblocks/react';
@@ -70,7 +70,7 @@ import { Loading } from '@/components/Loading';
 import { useRouter } from 'next/navigation';
 import { getExampleRoomId } from '@/lib/getExampleRoomId';
 
-export function Room({ children }: { children: ReactNode }) {
+export async function Room({ children }: { children: ReactNode }) {
   const [timeRemaining, setTimeRemaining] = useState(60); // 60 seconds countdown
   const router = useRouter();
 
@@ -101,7 +101,14 @@ export function Room({ children }: { children: ReactNode }) {
   console.log(exampleRoomId);
 
   return (
-    <RoomProvider id={exampleRoomId} initialPresence={{ cursor: null }}>
+    <Suspense fallback={<Loading />}>
+    <RoomProvider
+      id={
+        (await exampleRoomId.catch(() => 'liveblocks:examples:nextjs-yjs-tiptap')) ||
+        'liveblocks:examples:nextjs-yjs-tiptap'
+      }
+      initialPresence={{ cursor: null }}
+    >
       <div>
         <h1>Collaborative Editor Instructions</h1>
         <p>Time Remaining: {timeRemaining} seconds</p>
@@ -116,5 +123,6 @@ export function Room({ children }: { children: ReactNode }) {
         {() => children}
       </ClientSideSuspense>
     </RoomProvider>
+    </Suspense>
   );
 }
