@@ -20,7 +20,7 @@ function useRoomId(roomId) {
     };
 
     fetchExampleRoomId();
-  }, [roomId]);
+  }, [RoomId]);
 
   return { RoomId, loading, error };
 }

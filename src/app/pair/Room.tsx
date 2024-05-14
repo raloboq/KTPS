@@ -108,7 +108,7 @@ export function Room({ children }: { children: ReactNode }) {
   
 
   return (
-    <RoomProvider id={RoomId(roomId).exampleRoomId || roomId} initialPresence={{ cursor: null }}>
+    <RoomProvider id={RoomId || roomId} initialPresence={{ cursor: null }}>
       <div>
         <h1>Collaborative Editor Instructions</h1>
         <p>Time Remaining: {timeRemaining} seconds</p>
