@@ -13,6 +13,7 @@ import styles from "./CollaborativeEditor.module.css";
 import { Avatars } from "@/components/Avatars";
 
 // Collaborative text editor with simple rich text, live cursors, and live avatars
+
 export function CollaborativeEditor() {
   const room = useRoom();
   const [doc, setDoc] = useState<Y.Doc>();
@@ -46,7 +47,7 @@ type EditorProps = {
 function TiptapEditor({ doc, provider }: EditorProps) {
   // Get user info from Liveblocks authentication endpoint
   const userInfo = useSelf((me) => me.info);
-
+  const room = useRoom();
   // Set up editor with plugins, and place user info into Yjs awareness and cursors
   const editor = useEditor({
     editorProps: {
@@ -54,10 +55,21 @@ function TiptapEditor({ doc, provider }: EditorProps) {
         // Add styles to editor element
         class: styles.editor,
       },
+      handleDOMEvents: { 
+        keydown: (view, event) => {
+          var timestamp = Number(new Date());
+          console.log(room.id)
+          console.log(event.key)
+          console.log(timestamp)
+          console.log(userInfo)
+      
+        }
+      },
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON()
-      console.log(json)
+      //console.log(json)
+      
       // send the content to an API here
     },
     extensions: [
