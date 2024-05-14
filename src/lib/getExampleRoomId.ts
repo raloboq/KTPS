@@ -4,7 +4,7 @@ import { sql } from '@vercel/postgres';
 export async function getExampleRoomId() {
   const { rows } = await sql`
     SELECT name
-    FROM ooms
+    FROM rooms
   `;
 
   if (rows.length === 0) {
