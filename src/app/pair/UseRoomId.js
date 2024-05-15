@@ -13,6 +13,7 @@ function useRoomId(roomId) {
         console.log("aaaa"+fetchedExampleRoomId);
         setExampleRoomId(fetchedExampleRoomId);
       } catch (err) {
+        console.log("aaaa"+err);
         setError(err);
       } finally {
         setLoading(false);

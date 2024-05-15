@@ -1,5 +1,6 @@
 //import { db } from './database';
 
+
 import { sql } from '@vercel/postgres';
 
 export async function getExampleRoomId() {
@@ -17,3 +18,13 @@ export async function getExampleRoomId() {
 
   return rows[0].name;
 }
+
+/*
+import pg from 'pg';
+
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL,
+})
+*/
