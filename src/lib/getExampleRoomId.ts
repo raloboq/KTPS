@@ -1,6 +1,6 @@
 //import { db } from './database';
 
-
+"use server"
 import { sql } from '@vercel/postgres';
 
 export async function getExampleRoomId() {
