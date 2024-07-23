@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getExampleRoomId } from '@/lib/getExampleRoomId';
 
-function useRoomId(roomId) {
+function useRoomId() {
   const [RoomId, setExampleRoomId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

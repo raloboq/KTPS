@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './thinkPage.module.css';
@@ -9,12 +7,14 @@ import styles from './thinkPage.module.css';
 export default function ThinkPage() {
   const [thought, setThought] = useState('');
   const [timeRemaining, setTimeRemaining] = useState(60); // 60 seconds countdown
+  const [alias, setAlias] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const text1 = searchParams.get('alias');
     if (text1) {
+      setAlias(text1);
       setThought(`Thinking about: ${decodeURIComponent(text1)}\n\n`);
     }
 
@@ -25,17 +25,18 @@ export default function ThinkPage() {
     return () => clearInterval(timer);
   }, [searchParams]);
 
-
   useEffect(() => {
     if (timeRemaining === 0) {
-      router.push('/pair');
+      const encodedUserName = encodeURIComponent(alias);
+      router.push(`/pair?alias=${encodedUserName}`);
     }
-  }, [timeRemaining, router]);
+  }, [timeRemaining, router, alias]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log('Thought:', thought);
-    router.push('/pair');
+    const encodedUserName = encodeURIComponent(alias);
+    router.push(`/pair?alias=${encodedUserName}`);
   };
 
   return (

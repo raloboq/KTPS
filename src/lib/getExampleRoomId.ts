@@ -4,9 +4,9 @@
 import { sql } from '@vercel/postgres';
 
 export async function getExampleRoomId() {
-    console.log("pruebaaaaa");
-    console.log(process.env.POSTGRES_URL)
-    console.log(process.env)
+    console.log("getExampleRoomId");
+    //console.log(process.env.POSTGRES_URL)
+    //console.log(process.env)
   const { rows } = await sql`
     SELECT name
     FROM rooms
