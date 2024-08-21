@@ -7,7 +7,40 @@ import styles from './pairPage.module.css';
 export default function PairContent() {
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
   const searchParams = useSearchParams();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const userName = searchParams.get('alias');
+
+  useEffect(() => {
+    const authenticateUser = async () => {
+      if (!userName) {
+        setAuthError('Nombre de usuario no proporcionado');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/liveblocks-auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userName }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error durante la autenticación:', error);
+        setAuthError(error instanceof Error ? error.message : 'Ocurrió un error durante la autenticación');
+      }
+    };
+
+    authenticateUser();
+  }, [userName]);
 
   useEffect(() => {
     const timer = setInterval(() => {

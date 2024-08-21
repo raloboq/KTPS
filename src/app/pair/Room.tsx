@@ -229,7 +229,7 @@ export function Room({ children }: { children: ReactNode }) {
     </RoomProvider>
   );
 }*/
-/*'use client';
+'use client';
 import { ReactNode, useState, useEffect } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
 import { ClientSideSuspense } from '@liveblocks/react';
@@ -345,8 +345,8 @@ export function Room({ children }: { children: ReactNode }) {
       </div>
     </RoomProvider>
   );
-}*/
-'use client';
+}
+/*'use client';
 
 import { Suspense } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
@@ -370,7 +370,7 @@ export default function Room({ children }: { children: React.ReactNode }) {
   if (error) return <div className={styles.error}>Error: {(error as Error).message}</div>;
 
   return (
-    <RoomProvider id={roomId} initialPresence={{ cursor: null }}>
+    <RoomProvider id={RoomId || roomId} initialPresence={{ cursor: null }}>
       <div className={styles.container}>
         <Suspense fallback={<Loading />}>
           <PairContent />
@@ -392,4 +392,4 @@ export default function Room({ children }: { children: React.ReactNode }) {
       </div>
     </RoomProvider>
   );
-}
+}*/
