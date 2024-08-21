@@ -235,7 +235,7 @@ import { RoomProvider } from '@/liveblocks.config';
 import { ClientSideSuspense } from '@liveblocks/react';
 import { Loading } from '@/components/Loading';
 import { useRouter, useSearchParams } from 'next/navigation';
-import UseRoomId from './useRoomId';
+import UseRoomId from './UseRoomId';
 import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
 
