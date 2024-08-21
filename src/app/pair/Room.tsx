@@ -229,7 +229,7 @@ export function Room({ children }: { children: ReactNode }) {
     </RoomProvider>
   );
 }*/
-'use client';
+/*'use client';
 import { ReactNode, useState, useEffect } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
 import { ClientSideSuspense } from '@liveblocks/react';
@@ -342,6 +342,53 @@ export function Room({ children }: { children: ReactNode }) {
             <ChatArea systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} />
           </div>
         </div>
+      </div>
+    </RoomProvider>
+  );
+}*/
+'use client';
+
+import { Suspense } from 'react';
+import { RoomProvider } from '@/liveblocks.config';
+import { ClientSideSuspense } from '@liveblocks/react';
+import { Loading } from '@/components/Loading';
+import UseRoomId from './useRoomId';
+import ChatArea from "../chat/components/Chatarea";
+import styles from './pairPage.module.css';
+import PairContent from './pairContent';
+
+const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+
+
+export default function Room({ children }: { children: React.ReactNode }) {
+  
+
+  const { RoomId, loading, error } = UseRoomId();
+  const roomId = RoomId || 'liveblocks:examples:nextjs-yjs-tiptap0000';
+
+  if (loading) return <Loading />;
+  if (error) return <div className={styles.error}>Error: {(error as Error).message}</div>;
+
+  return (
+    <RoomProvider id={roomId} initialPresence={{ cursor: null }}>
+      <div className={styles.container}>
+        <Suspense fallback={<Loading />}>
+          <PairContent />
+        </Suspense>
+        <ClientSideSuspense fallback={<Loading />}>
+          {() => (
+            <div className={styles.chatContainer}>
+            <div className={styles.editorContainer}>
+              <ClientSideSuspense fallback={<Loading />}>
+                {() => children}
+              </ClientSideSuspense>
+            </div>
+            <div className={styles.chatAreaWrapper}>
+              <ChatArea systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} />
+            </div>
+          </div>
+          )}
+        </ClientSideSuspense>
       </div>
     </RoomProvider>
   );
