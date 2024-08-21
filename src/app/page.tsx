@@ -94,11 +94,15 @@ export default function Page() {
 'use client';
 
 import styles from './styles.module.css';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useRooms from './pair/useRooms';
+
+interface Room {
+  id: string;
+  name: string;
+}
 
 export default function Page() {
   const [userName, setUserName] = useState('');
@@ -109,7 +113,7 @@ export default function Page() {
 
   useEffect(() => {
     if (error) {
-      setFormError('Error al cargar las salas: ' + error);
+      setFormError('Error al cargar las salas: ' + error.message);
     } else {
       setFormError('');
     }
@@ -127,6 +131,7 @@ export default function Page() {
     const encodedUserName = encodeURIComponent(userName);
     router.push(`/think?alias=${encodedUserName}&roomId=${selectedRoomId}`);
   };
+
 
   const isFormValid = userName.trim() !== '' && selectedRoomId !== '' && !loading;
 
@@ -155,19 +160,19 @@ export default function Page() {
           required
         />
         <select
-          value={selectedRoomId}
-          onChange={(e) => setSelectedRoomId(e.target.value)}
-          className={styles.select}
-          required
-          disabled={loading}
-        >
-          <option value="">Selecciona una sala</option>
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.name}
-            </option>
-          ))}
-        </select>
+        value={selectedRoomId}
+        onChange={(e) => setSelectedRoomId(e.target.value)}
+        className={styles.select}
+        required
+        disabled={loading}
+      >
+        <option value="">Selecciona una sala</option>
+        {rooms.map((room: Room) => (
+          <option key={room.id} value={room.id}>
+            {room.name}
+          </option>
+        ))}
+      </select>
         <button
           type="submit"
           className={styles.button}
