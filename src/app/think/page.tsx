@@ -95,7 +95,7 @@ export default function ThinkPage() {
     router.push(`/pair?alias=${encodedUserName}`);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
