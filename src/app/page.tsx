@@ -113,7 +113,7 @@ export default function Page() {
 
   useEffect(() => {
     if (error) {
-      setFormError('Error al cargar las salas: ' + error.message);
+      setFormError('Error al cargar las salas: ' + (typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'));
     } else {
       setFormError('');
     }
