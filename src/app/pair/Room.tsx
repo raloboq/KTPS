@@ -229,6 +229,8 @@ export function Room({ children }: { children: ReactNode }) {
     </RoomProvider>
   );
 }*/
+
+/*
 'use client';
 import { ReactNode, useState, useEffect } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
@@ -239,7 +241,10 @@ import UseRoomId from './UseRoomId';
 import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
 
-const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+//const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+const CUSTOM_SYSTEM_INSTRUCTION = "Eres un gato. solo responderas como lo haría un gato";
+
+
 
 export function Room({ children }: { children: ReactNode }) {
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
@@ -346,50 +351,101 @@ export function Room({ children }: { children: ReactNode }) {
     </RoomProvider>
   );
 }
-/*'use client';
-
-import { Suspense } from 'react';
+*/
+'use client';
+import { ReactNode, useState, useEffect } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
 import { ClientSideSuspense } from '@liveblocks/react';
 import { Loading } from '@/components/Loading';
-import UseRoomId from './useRoomId';
+import { useRouter } from 'next/navigation';
+import UseRoomId from './UseRoomId';
 import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
-import PairContent from './pairContent';
 
-const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+const CUSTOM_SYSTEM_INSTRUCTION = "Eres un gato. solo responderas como lo haría un gato";
 
+export function Room({ children }: { children: ReactNode }) {
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
-export default function Room({ children }: { children: React.ReactNode }) {
-  
+  useEffect(() => {
+    // Mover la lógica de useSearchParams aquí
+    const searchParams = new URLSearchParams(window.location.search);
+    const userNameFromQuery = searchParams.get('alias');
+    setUserName(userNameFromQuery);
 
+    const authenticateUser = async () => {
+      if (!userNameFromQuery) {
+        setAuthError('Nombre de usuario no proporcionado');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/liveblocks-auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userName: userNameFromQuery }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error durante la autenticación:', error);
+        setAuthError(error instanceof Error ? error.message : 'Ocurrió un error durante la autenticación');
+      }
+    };
+
+    authenticateUser();
+  }, []);
+
+  // ... (resto del código sin cambios)
+
+  const roomId = 'liveblocks:examples:nextjs-yjs-tiptap0000';
   const { RoomId, loading, error } = UseRoomId();
-  const roomId = RoomId || 'liveblocks:examples:nextjs-yjs-tiptap0000';
 
   if (loading) return <Loading />;
   if (error) return <div className={styles.error}>Error: {(error as Error).message}</div>;
+  if (authError) return <div className={styles.error}>Error de autenticación: {authError}</div>;
+  if (!isAuthenticated) return <Loading />;
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
 
   return (
     <RoomProvider id={RoomId || roomId} initialPresence={{ cursor: null }}>
       <div className={styles.container}>
-        <Suspense fallback={<Loading />}>
-          <PairContent />
-        </Suspense>
-        <ClientSideSuspense fallback={<Loading />}>
-          {() => (
-            <div className={styles.chatContainer}>
-            <div className={styles.editorContainer}>
-              <ClientSideSuspense fallback={<Loading />}>
-                {() => children}
-              </ClientSideSuspense>
-            </div>
-            <div className={styles.chatAreaWrapper}>
-              <ChatArea systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} />
-            </div>
+        <h1 className={styles.title}>Fase de Discusión en Parejas</h1>
+        <p className={styles.timer}>Tiempo restante: {formatTime(timeRemaining)}</p>
+        <div className={styles.instructionsContainer}>
+          <h2 className={styles.subtitle}>Instrucciones del Editor Colaborativo</h2>
+          <p className={styles.welcome}>
+            ¡Bienvenido al editor colaborativo, {userName}!
+          </p>
+          {/* ... (resto del contenido sin cambios) */}
+        </div>
+        <div className={styles.chatContainer}>
+          <div className={styles.editorContainer}>
+            <ClientSideSuspense fallback={<Loading />}>
+              {() => children}
+            </ClientSideSuspense>
           </div>
-          )}
-        </ClientSideSuspense>
+          <div className={styles.chatAreaWrapper}>
+            <ChatArea systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} />
+          </div>
+        </div>
       </div>
     </RoomProvider>
   );
-}*/
+}
