@@ -199,9 +199,27 @@ const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
   const [genAI, setGenAI] = useState(null);
   const [chat, setChat] = useState(null);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const ai = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
     setGenAI(ai);
+  }, []);*/
+  useEffect(() => {
+    const initializeAI = async () => {
+      try {
+        const response = await fetch('/api/get-gemini-key');
+        const data = await response.json();
+        if (data.apiKey) {
+          const ai = new GoogleGenerativeAI(data.apiKey);
+          setGenAI(ai);
+        } else {
+          console.error('No se pudo obtener la clave de API de Gemini');
+        }
+      } catch (error) {
+        console.error('Error al inicializar la IA:', error);
+      }
+    };
+
+    initializeAI();
   }, []);
 
   useEffect(() => {

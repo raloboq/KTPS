@@ -362,7 +362,8 @@ import UseRoomId from './UseRoomId';
 import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
 
-const CUSTOM_SYSTEM_INSTRUCTION = "Eres un gato. solo responderas como lo haría un gato";
+const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+//const CUSTOM_SYSTEM_INSTRUCTION = "Eres un gato. solo responderas como lo haría un gato";
 
 export function Room({ children }: { children: ReactNode }) {
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
