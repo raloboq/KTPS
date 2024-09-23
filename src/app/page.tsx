@@ -199,7 +199,7 @@ import useRooms from './pair/useRooms';
 //import { registrarSesion } from './api/registrar-sesion';
 
 interface Room {
-  id: string;
+  id: string | number;
   name: string;
 }
 
@@ -288,21 +288,16 @@ export default function Page() {
     setSelectedRoomId(roomId);
     
     if (rooms && rooms.length > 0) {
-      const numericRoomId = Number(roomId);
-      if (!isNaN(numericRoomId)) {
-        const selectedRoom = rooms.find(room => room.id === numericRoomId);
-        console.log("selectedRoom", selectedRoom);
-        setSelectedRoomName(selectedRoom ? selectedRoom.name : '');
-      } else {
-        console.log("Invalid room ID");
-        setSelectedRoomName('');
-      }
+      const selectedRoom = rooms.find(room => 
+        typeof room.id === 'number' ? room.id === Number(roomId) : room.id === roomId
+      );
+      console.log("selectedRoom", selectedRoom);
+      setSelectedRoomName(selectedRoom ? selectedRoom.name : '');
     } else {
       console.log("No rooms available");
       setSelectedRoomName('');
     }
   };
-
   const isFormValid = userName.trim() !== '' && selectedRoomId !== '' && !loading;
 
   return (
@@ -329,19 +324,19 @@ export default function Page() {
           required
         />
         <select
-          value={selectedRoomId}
-          onChange={handleRoomChange}
-          className={styles.select}
-          required
-          disabled={loading}
-        >
-          <option value="">Selecciona una sala</option>
-          {rooms.map((room: Room) => (
-            <option key={room.id} value={room.id}>
-              {room.name}
-            </option>
-          ))}
-        </select>
+  value={selectedRoomId}
+  onChange={handleRoomChange}
+  className={styles.select}
+  required
+  disabled={loading}
+>
+  <option value="">Selecciona una sala</option>
+  {rooms.map((room: Room) => (
+    <option key={room.id} value={room.id.toString()}>
+      {room.name}
+    </option>
+  ))}
+</select>
         <button
           type="submit"
           className={styles.button}
