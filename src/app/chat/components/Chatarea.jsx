@@ -182,14 +182,14 @@ const ChatArea = () => {
 export default ChatArea;*/
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import Image from "next/image";
 
-const DEFAULT_SYSTEM_INSTRUCTION = "Eres un profesor de programación de computadores de universidad, no lo darás ningun codigo ni ofreceras ejemplos, solo le explicaras al estudiante los pasos necesarios para lograrlo usa respuestas cortas y concisas";
+const INTERACTION_SEND_INTERVAL = 5000; // 5 segundos
 
-const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
+const ChatArea = ({ systemInstruction, userName, roomId }) => {
   const messagesEndRef = useRef(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -198,11 +198,12 @@ const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
   ]);
   const [genAI, setGenAI] = useState(null);
   const [chat, setChat] = useState(null);
+  const [chatSessionId, setChatSessionId] = useState(null);
+  const [sessionInitialized, setSessionInitialized] = useState(false);
 
-  /*useEffect(() => {
-    const ai = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
-    setGenAI(ai);
-  }, []);*/
+  const messagesQueueRef = useRef([]);
+  const interactionsQueueRef = useRef([]);
+
   useEffect(() => {
     const initializeAI = async () => {
       try {
@@ -237,6 +238,95 @@ const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
   }, [genAI, chat, systemInstruction]);
 
   useEffect(() => {
+    const initChatSession = async () => {
+      if (!roomId || !userName) {
+        console.error('roomId o userName no proporcionados');
+        return;
+      }
+
+      try {
+        console.log('Iniciando sesión de chat...',roomId, userName);
+        const response = await fetch('/api/iniciar-sesion-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room_id: roomId, nombre_usuario: userName })
+        });
+        if (!response.ok) {
+          throw new Error('Error en la respuesta del servidor');
+        }
+        const data = await response.json();
+        setChatSessionId(data.id_sesion_chat);
+        setSessionInitialized(true);
+        console.log('Sesión de chat iniciada:', data.id_sesion_chat);
+      } catch (error) {
+        console.error('Error al iniciar sesión de chat:', error);
+        // Aquí podrías implementar una lógica de reintento o notificar al usuario
+      }
+    };
+
+    initChatSession();
+  }, [roomId, userName]);
+
+  const queueMessage = (tipo_mensaje, contenido) => {
+    messagesQueueRef.current.push({ tipo_mensaje, contenido, nombre_usuario: userName });
+  };
+
+  const queueInteraction = (tipo_interaccion, detalles) => {
+    interactionsQueueRef.current.push({ tipo_interaccion, detalles, nombre_usuario: userName });
+  };
+
+  const sendQueuedData = useCallback(async () => {
+    if (!sessionInitialized) {
+      console.log('Sesión de chat no inicializada aún');
+      return;
+    }
+
+    if (!chatSessionId) {
+      console.error('chatSessionId es null');
+      return;
+    }
+
+    if (messagesQueueRef.current.length === 0 && interactionsQueueRef.current.length === 0) {
+      return;
+    }
+
+    const messagesToSend = [...messagesQueueRef.current];
+    const interactionsToSend = [...interactionsQueueRef.current];
+    messagesQueueRef.current = [];
+    interactionsQueueRef.current = [];
+
+    try {
+      console.log('Enviando datos del chat...', chatSessionId, messagesToSend, interactionsToSend);
+      const response = await fetch('/api/registrar-datos-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_sesion_chat: chatSessionId,
+          mensajes: messagesToSend,
+          interacciones: interactionsToSend
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
+      console.log('Datos enviados con éxito');
+    } catch (error) {
+      console.error('Error al enviar datos del chat:', error);
+      // Volver a poner los datos en la cola si falló el envío
+      messagesQueueRef.current.push(...messagesToSend);
+      interactionsQueueRef.current.push(...interactionsToSend);
+    }
+  }, [chatSessionId, sessionInitialized]);
+
+  useEffect(() => {
+    const intervalId = setInterval(sendQueuedData, INTERACTION_SEND_INTERVAL);
+    return () => clearInterval(intervalId);
+  }, [sendQueuedData]);
+
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history]);
 
@@ -248,14 +338,27 @@ const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
     const currentInput = input;
     setInput("");
     
+    queueMessage('usuario', currentInput);
+    queueInteraction('mensaje_enviado', { timestamp: Date.now() });
+    
     try {
       const result = await chat.sendMessage(currentInput);
       const response = await result.response;
       const text = response.text();
       setHistory(prev => [...prev, { role: "model", parts: text }]);
+      
+      queueMessage('modelo', text);
+      queueInteraction('respuesta_recibida', { timestamp: Date.now() });
     } catch (error) {
       console.error("Error in chat:", error);
-      setHistory(prev => [...prev, { role: "model", parts: "Lo siento, ha ocurrido un error. Por favor, intenta de nuevo." }]);
+      const errorMessage = "Lo siento, ha ocurrido un error. Por favor, intenta de nuevo.";
+      setHistory(prev => [...prev, { role: "model", parts: errorMessage }]);
+      
+      queueMessage('modelo', errorMessage);
+      queueInteraction('error', { 
+        mensaje: "Error en la comunicación con el chatbot",
+        timestamp: Date.now()
+      });
     } finally {
       setLoading(false);
     }
@@ -269,18 +372,7 @@ const ChatArea = ({ systemInstruction = DEFAULT_SYSTEM_INSTRUCTION }) => {
   }
 
   return (
-    /*<div className="chat-area" style={{
-      width: '100%',
-      maxWidth: '800px',
-      margin: '20px auto',
-      backgroundColor: '#ffffff',
-      borderRadius: '10px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '400px' // Ajustado a 400px de altura total
-    }}>*/
+    
     <div className="chat-area" style={{
       width: '100%',
       height: '100%',
