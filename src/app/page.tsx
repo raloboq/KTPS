@@ -195,7 +195,8 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useRooms from './pair/useRooms';
-import { registrarSesion } from './api/registrar-sesion/route';
+//import { registrarSesion } from './api/registrar-sesion';
+//import { registrarSesion } from './api/registrar-sesion';
 
 interface Room {
   id: string;
@@ -219,7 +220,7 @@ export default function Page() {
     }
   }, [error]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  /*const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
 
@@ -231,6 +232,42 @@ export default function Page() {
     try {
       await registrarSesion(selectedRoomId, selectedRoomName, userName);
 
+      const encodedUserName = encodeURIComponent(userName);
+      const encodedRoomName = encodeURIComponent(selectedRoomName);
+      router.push(`/think?alias=${encodedUserName}&roomId=${selectedRoomId}&roomName=${encodedRoomName}`);
+    } catch (error) {
+      setFormError('Error al registrar la sesión: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };*/
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFormError('');
+  
+    if (!selectedRoomId) {
+      setFormError('Por favor, selecciona una sala.');
+      return;
+    }
+  
+    try {
+      const response = await fetch('/api/registrar-sesion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomId: selectedRoomId,
+          roomName: selectedRoomName,
+          userName: userName
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al registrar la sesión');
+      }
+  
+      const data = await response.json();
+  
       const encodedUserName = encodeURIComponent(userName);
       const encodedRoomName = encodeURIComponent(selectedRoomName);
       router.push(`/think?alias=${encodedUserName}&roomId=${selectedRoomId}&roomName=${encodedRoomName}`);
