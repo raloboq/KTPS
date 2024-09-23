@@ -1,11 +1,11 @@
-/*import ChatArea from "./components/Chatarea";
+import ChatArea from "./components/Chatarea";
 
 
 export default function Home() {
   return (
     <main >
       
-      <ChatArea />
+      <ChatArea systemInstruction={undefined} userName={undefined} roomId={undefined} />
     </main>
   );
-}*/
+}
