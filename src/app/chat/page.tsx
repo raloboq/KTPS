@@ -1,4 +1,4 @@
-import ChatArea from "./components/Chatarea";
+/*import ChatArea from "./components/Chatarea";
 
 
 export default function Home() {
@@ -8,4 +8,4 @@ export default function Home() {
       <ChatArea />
     </main>
   );
-}
+}*/

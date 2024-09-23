@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     });
   }
 }*/
-import { Liveblocks } from "@liveblocks/node";
+/*import { Liveblocks } from "@liveblocks/node";
 import { NextRequest, NextResponse } from "next/server";
 
 const liveblocks = new Liveblocks({
@@ -148,7 +148,7 @@ const USER_INFO = [
     color: "#87EE85",
     picture: "https://liveblocks.io/avatars/avatar-8.png",
   },
-];
+];*/
 
 /*export async function POST(request: NextRequest) {
   try {
@@ -194,8 +194,8 @@ const USER_INFO = [
   }
 }*/
 
-
-let callCount = 0;
+//ultima version 21 septiembre 
+/*let callCount = 0;
 let lastUserName: string | null = null;
 
 export async function POST(request: NextRequest) {
@@ -262,5 +262,131 @@ export async function POST(request: NextRequest) {
     console.error(`Call #${callCount} - Error in POST handler:`, error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+}*/
+
+//nueva version 23 septiembre
+import { Liveblocks } from "@liveblocks/node";
+import { NextRequest, NextResponse } from "next/server";
+
+const liveblocks = new Liveblocks({
+  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
+});
+
+const USER_INFO = [
+  {
+    color: "#D583F0",
+    picture: "https://liveblocks.io/avatars/avatar-1.png",
+  },
+  {
+    color: "#87EE85",
+    picture: "https://liveblocks.io/avatars/avatar-8.png",
+  },
+];
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    console.log("Received data:", data);
+
+    let userInfo;
+    let sessionId;
+
+    // Usar el userName proporcionado o generar uno aleatorio
+    const userName = data.userName || `User_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const userId = Math.floor(Math.random() * USER_INFO.length);
+    const randomUserInfo = USER_INFO[userId];
+    
+    sessionId = `user-${userName}-${Date.now()}`;
+    userInfo = {
+      name: userName,
+      color: randomUserInfo.color,
+      picture: randomUserInfo.picture,
+    };
+
+    console.log("Creating session for user:", userInfo);
+
+    const session = liveblocks.prepareSession(sessionId, { userInfo });
+
+    // Otorgar acceso a todas las salas o a una sala específica si se proporciona
+    if (data.room) {
+      session.allow(data.room, [
+        "room:write",
+        "room:read",
+        "room:presence:write",
+        "comments:write",
+        "comments:read"
+      ]);
+    } else {
+      session.allow("*", [
+        "room:write",
+        "room:read",
+        "room:presence:write",
+        "comments:write",
+        "comments:read"
+      ]);
+    }
+
+    const { body, status } = await session.authorize();
+    console.log("Authorization successful, status:", status);
+    
+    return new NextResponse(body, { status });
+
+  } catch (error) {
+    console.error("Error in POST handler:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
 
+//nueva version 22 septiembre
+
+/*export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    console.log("Received data:", data);
+
+    let userInfo;
+    let sessionId;
+
+    if (data.userName) {
+      const userId = Math.floor(Math.random() * USER_INFO.length);
+      const randomUserInfo = USER_INFO[userId];
+      sessionId = `user-${data.userName}-${userId}`;
+      userInfo = {
+        name: data.userName,
+        color: randomUserInfo.color,
+        picture: randomUserInfo.picture,
+      };
+    } else {
+      console.log("userName no proporcionado, usando valor por defecto");
+      sessionId = `anonymous-${Date.now()}`;
+      userInfo = { 
+        name: "Anonymous User", 
+        color: "#808080", 
+        picture: "default-avatar-url.jpg" 
+      };
+    }
+
+    console.log("Creating session for user:", userInfo);
+
+    const session = liveblocks.prepareSession(sessionId, { userInfo });
+
+    // Otorgar acceso a todas las salas
+    session.allow("*", [
+      "room:write",
+      "room:read",
+      "room:presence:write",
+      "comments:write",
+      "comments:read"
+    ]);
+
+    const { body, status } = await session.authorize();
+    console.log("Authorization successful, status:", status);
+    
+    return new NextResponse(body, { status });
+
+  } catch (error) {
+    console.error("Error in POST handler:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}*/

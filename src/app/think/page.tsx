@@ -288,19 +288,6 @@ export default function ThinkPage() {
     }
   }, [timeRemaining]);
 
-  /*useEffect(() => {
-    let pauseTimer: NodeJS.Timeout;
-
-    if (lastTypingTime) {
-      pauseTimer = setTimeout(() => {
-        setPauseCount(prevCount => prevCount + 1);
-        queueInteraction('pausa_escritura', { duracion: pauseThreshold });
-      }, pauseThreshold);
-    }
-
-    return () => clearTimeout(pauseTimer);
-  }, [lastTypingTime]);*/
-
   useEffect(() => {
     let pauseTimer: NodeJS.Timeout;
 
@@ -385,18 +372,19 @@ export default function ThinkPage() {
         const pauseDuration = pauseStartTimeRef.current ? Date.now() - pauseStartTimeRef.current : 0;
         queueInteraction('pausa_escritura', { duracion: pauseDuration });
       }
-      captureContent(thought, true); // Forzar una captura final del contenido
-      await sendInteractions(); // Enviar cualquier interacción pendiente
+      captureContent(thought, true);
+      await sendInteractions();
       queueInteraction('envío', { contenido_final: thought });
-      await sendInteractions(); // Enviar la interacción de envío inmediatamente
-      await guardarReflexion(sessionId, thought);
+      await sendInteractions();
+      
       const encodedUserName = encodeURIComponent(alias);
+      await guardarReflexion(sessionId, thought, encodedUserName);
+      
       router.push(`/pair?alias=${encodedUserName}`);
     } catch (error) {
       console.error('Error al enviar la reflexión:', error);
     }
   };
-
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;

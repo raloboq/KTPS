@@ -3,9 +3,42 @@ import { createRoomContext } from "@liveblocks/react";
 
 // Try changing the lostConnectionTimeout value to increase
 // or reduct the time it takes to reconnect
-const client = createClient({
+//old
+/*const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
+});*/
+
+//other
+const client = createClient({
+  authEndpoint: async (room) => {
+    const userName = localStorage.getItem('userName') || null;
+    const response = await fetch("/api/liveblocks-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ room, userName }),
+    });
+    return response.json();
+  },
 });
+
+//new
+/*const client = createClient({
+  authEndpoint: async (room) => {
+    const response = await fetch("/api/liveblocks-auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ room }),
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to authenticate");
+    }
+
+    return response.json();
+  },
+});*/
 
 // Presence represents the properties that exist on every user in the Room
 // and that will automatically be kept in sync. Accessible through the

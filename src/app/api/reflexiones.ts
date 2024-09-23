@@ -1,11 +1,11 @@
-"use server"
+'use server'
 import { sql } from '@vercel/postgres';
 
-export async function guardarReflexion(id_sesion: number, contenido: string) {
+export async function guardarReflexion(id_sesion: number, contenido: string, usuario: string) {
   console.log("guardarReflexion");
   const { rows } = await sql`
-    INSERT INTO reflexiones (id_sesion, contenido)
-    VALUES (${id_sesion}, ${contenido})
+    INSERT INTO reflexiones (id_sesion, contenido, usuario)
+    VALUES (${id_sesion}, ${contenido}, ${usuario})
     RETURNING id_reflexion
   `;
   

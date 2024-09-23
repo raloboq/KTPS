@@ -376,6 +376,9 @@ export function Room({ children }: { children: ReactNode }) {
     // Mover la lógica de useSearchParams aquí
     const searchParams = new URLSearchParams(window.location.search);
     const userNameFromQuery = searchParams.get('alias');
+    if (userNameFromQuery) {
+      localStorage.setItem('userName', userNameFromQuery);
+    }
     setUserName(userNameFromQuery);
 
     const authenticateUser = async () => {
