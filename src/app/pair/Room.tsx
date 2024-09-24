@@ -371,8 +371,9 @@ export function Room({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const { roomInfo, loading, error } = UseRoomId(userName|| '');
 
-  useEffect(() => {
+  /*useEffect(() => {
     // Mover la lógica de useSearchParams aquí
     const searchParams = new URLSearchParams(window.location.search);
     const userNameFromQuery = searchParams.get('alias');
@@ -380,6 +381,44 @@ export function Room({ children }: { children: ReactNode }) {
       localStorage.setItem('userName', userNameFromQuery);
     }
     setUserName(userNameFromQuery);
+
+    const authenticateUser = async () => {
+      if (!userNameFromQuery) {
+        setAuthError('Nombre de usuario no proporcionado');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/liveblocks-auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userName: userNameFromQuery }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Authentication failed');
+        }
+
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error durante la autenticación:', error);
+        setAuthError(error instanceof Error ? error.message : 'Ocurrió un error durante la autenticación');
+      }
+    };
+
+    authenticateUser();
+  }, []);*/
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const userNameFromQuery = searchParams.get('alias');
+    if (userNameFromQuery) {
+      localStorage.setItem('userName', userNameFromQuery);
+      setUserName(userNameFromQuery);
+    }
 
     const authenticateUser = async () => {
       if (!userNameFromQuery) {
@@ -429,22 +468,29 @@ export function Room({ children }: { children: ReactNode }) {
 
   // ... (resto del código sin cambios)
 
-  const roomId = 'liveblocks:examples:nextjs-yjs-tiptap0000';
-  const { RoomId, loading, error } = UseRoomId();
+  //const roomId = 'liveblocks:examples:nextjs-yjs-tiptap0000';
+  //const { RoomId, loading, error } = UseRoomId();
+  //const { roomInfo, loading, error } = UseRoomId(userName);
 
-  if (loading) return <Loading />;
-  if (error) return <div className={styles.error}>Error: {(error as Error).message}</div>;
-  if (authError) return <div className={styles.error}>Error de autenticación: {authError}</div>;
-  if (!isAuthenticated) return <Loading />;
-
+  
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
+  if (!userName) return <Loading />;
+  if (loading) return <Loading />;
+  if (error) return <div className={styles.error}>Error: {(error as Error).message}</div>;
+  if (authError) return <div className={styles.error}>Error de autenticación: {authError}</div>;
+  if (!isAuthenticated) return <Loading />;
+
+
   return (
-    <RoomProvider id={RoomId || roomId} initialPresence={{ cursor: null }}>
+   // <RoomProvider id={RoomId || roomId} initialPresence={{ cursor: null }}>
+   //<RoomProvider id={roomInfo.id || 'default-room-id'} initialPresence={{ cursor: null }}>
+   <RoomProvider id={roomInfo?.id || 'default-room-id'} initialPresence={{ cursor: null }}>
+    
       <div className={styles.container}>
         <h1 className={styles.title}>Fase de Discusión en Parejas</h1>
         <p className={styles.timer}>Tiempo restante: {formatTime(timeRemaining)}</p>
@@ -474,7 +520,8 @@ export function Room({ children }: { children: ReactNode }) {
           <ChatArea 
               systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
               userName={userName}
-              roomId={RoomId || roomId}
+              //roomId={roomInfo.name || roomId}
+              roomId={roomInfo?.name || 'default-room-name'}
             />
           </div>
         </div>
