@@ -353,7 +353,7 @@ export function Room({ children }: { children: ReactNode }) {
 }
 */
 'use client';
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 import { RoomProvider } from '@/liveblocks.config';
 import { ClientSideSuspense } from '@liveblocks/react';
 import { Loading } from '@/components/Loading';
@@ -363,54 +363,36 @@ import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
 
 const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
-//const CUSTOM_SYSTEM_INSTRUCTION = "Eres un gato. solo responderas como lo haría un gato";
 
 export function Room({ children }: { children: ReactNode }) {
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
+  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+  const [showPopup, setShowPopup] = useState(false);
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const { roomInfo, loading, error } = UseRoomId(userName|| '');
+  const [reflexion, setReflexion] = useState<string | null>(null);
+  const [showReflexion, setShowReflexion] = useState(false);
 
-  /*useEffect(() => {
-    // Mover la lógica de useSearchParams aquí
-    const searchParams = new URLSearchParams(window.location.search);
-    const userNameFromQuery = searchParams.get('alias');
-    if (userNameFromQuery) {
-      localStorage.setItem('userName', userNameFromQuery);
-    }
-    setUserName(userNameFromQuery);
-
-    const authenticateUser = async () => {
-      if (!userNameFromQuery) {
-        setAuthError('Nombre de usuario no proporcionado');
-        return;
-      }
-
+  const finalizarSesionColaborativa = useCallback(async () => {
+    if (roomInfo?.id) {
       try {
-        const response = await fetch('/api/liveblocks-auth', {
+        await fetch('/api/finalizar-sesion-colaborativa', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userName: userNameFromQuery }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_sesion_colaborativa: roomInfo.id })
         });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Authentication failed');
-        }
-
-        setIsAuthenticated(true);
+        console.log('Sesión colaborativa finalizada');
+        setShowPopup(true);
       } catch (error) {
-        console.error('Error durante la autenticación:', error);
-        setAuthError(error instanceof Error ? error.message : 'Ocurrió un error durante la autenticación');
+        console.error('Error al finalizar sesión colaborativa:', error);
       }
-    };
-
-    authenticateUser();
-  }, []);*/
+    }
+    else {
+      console.error('No se pudo finalizar sesión colaborativa. roomInfo.id no existe');
+    }
+  }, [roomInfo?.id]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -418,6 +400,7 @@ export function Room({ children }: { children: ReactNode }) {
     if (userNameFromQuery) {
       localStorage.setItem('userName', userNameFromQuery);
       setUserName(userNameFromQuery);
+      obtenerReflexion(userNameFromQuery);
     }
 
     const authenticateUser = async () => {
@@ -450,6 +433,24 @@ export function Room({ children }: { children: ReactNode }) {
     authenticateUser();
   }, []);
 
+  const obtenerReflexion = async (alias: string) => {
+    try {
+      console.log(`/api/obtener-reflexion?alias=${encodeURIComponent(alias)}`);
+      const response = await fetch(`/api/obtener-reflexion?alias=${encodeURIComponent(alias)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setReflexion(data.reflexion);
+      } else if (response.status === 404) {
+        console.log('No se encontró reflexión para este usuario');
+        setReflexion(null);
+      } else {
+        console.error('Error al obtener la reflexión:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error al obtener la reflexión:', error);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -458,20 +459,16 @@ export function Room({ children }: { children: ReactNode }) {
         if (prevTime <= 1) {
           clearInterval(timer);
           console.log('¡Se acabó el tiempo!');
+          finalizarSesionColaborativa();
+          // Aquí podrías añadir lógica adicional, como redirigir a una página de resumen
+          
           return 0;
         }
         return prevTime - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isAuthenticated]);
-
-  // ... (resto del código sin cambios)
-
-  //const roomId = 'liveblocks:examples:nextjs-yjs-tiptap0000';
-  //const { RoomId, loading, error } = UseRoomId();
-  //const { roomInfo, loading, error } = UseRoomId(userName);
-
+  }, [isAuthenticated,finalizarSesionColaborativa]);
   
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -510,6 +507,20 @@ export function Room({ children }: { children: ReactNode }) {
             ¡Aprovecha esta oportunidad para aprender de tu compañero y desarrollar una comprensión más profunda del tema!
           </p>
         </div>
+        <div className={styles.reflexionContainer}>
+          <button 
+            onClick={() => setShowReflexion(!showReflexion)}
+            className={styles.reflexionToggle}
+          >
+            {showReflexion ? 'Ocultar' : 'Mostrar'} tu reflexión
+          </button>
+          {showReflexion && reflexion && (
+            <div className={styles.reflexionContent}>
+              <h3>Tu reflexión anterior:</h3>
+              <p>{reflexion}</p>
+            </div>
+          )}
+        </div>
         <div className={styles.chatContainer}>
           <div className={styles.editorContainer}>
             <ClientSideSuspense fallback={<Loading />}>
@@ -526,6 +537,14 @@ export function Room({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
+      {showPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popup}>
+            <p>Gracias por participar en esta actividad y ayudar al avance de la ciencia. Espera las instrucciones del profesor.</p>
+            <button onClick={() => setShowPopup(false)}>Aceptar</button>
+          </div>
+        </div>
+      )}
     </RoomProvider>
   );
 }

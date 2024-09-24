@@ -229,7 +229,7 @@ const PAUSE_THRESHOLD = 3000;
 
 export default function ThinkPage() {
   const [thought, setThought] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(600);
+  const [timeRemaining, setTimeRemaining] = useState(480);
   const [alias, setAlias] = useState('');
   const [sessionId, setSessionId] = useState<number | null>(null);
   const router = useRouter();
@@ -242,6 +242,7 @@ export default function ThinkPage() {
   const pauseThreshold = 3000; // 3 segundos
   const lastCapturedContentRef = useRef('');
   const lastCaptureTimeRef = useRef(Date.now());
+  const [showPopup, setShowPopup] = useState(false);
 
   const interactionsQueueRef = useRef<Array<{ tipo: string; detalles: any }>>([]);
 
@@ -287,6 +288,11 @@ export default function ThinkPage() {
       handleSubmit();
     }
   }, [timeRemaining]);
+
+  const handleSave = () => {
+    setShowPopup(true);
+    setTimeout(() => setShowPopup(false), 30000); // Cierra el popup después de 3 segundos
+  };
 
   useEffect(() => {
     let pauseTimer: NodeJS.Timeout;
@@ -413,15 +419,20 @@ export default function ThinkPage() {
           <li>¿Qué medidas se podrían tomar para mitigar los efectos negativos de las redes sociales?</li>
         </ol>
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className={styles.form}>
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className={styles.form}>
         <textarea
           placeholder="Escribe tus reflexiones aquí..."
           value={thought}
           onChange={handleThoughtChange}
           className={styles.textarea}
         />
-        <button type="submit" className={styles.button}>Enviar</button>
+        <button type="submit" className={styles.button}>Guardar</button>
       </form>
+      {showPopup && (
+        <div className={styles.popup}>
+          <p>Gracias, espera a que el tiempo finalice para continuar</p>
+        </div>
+      )}
     </div>
   );
 }
