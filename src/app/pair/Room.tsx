@@ -362,6 +362,8 @@ import UseRoomId from './UseRoomId';
 import ChatArea from "../chat/components/Chatarea";
 import styles from './pairPage.module.css';
 
+//liveblocks:examples:ROOM2
+
 const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
 
 export function Room({ children }: { children: ReactNode }) {
@@ -527,14 +529,9 @@ export function Room({ children }: { children: ReactNode }) {
               {() => children}
             </ClientSideSuspense>
           </div>
-          <div className={styles.chatAreaWrapper}>
-          <ChatArea 
-              systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
-              userName={userName}
-              //roomId={roomInfo.name || roomId}
-              roomId={roomInfo?.name || 'default-room-name'}
-            />
-          </div>
+          
+          
+          
         </div>
       </div>
       {showPopup && (
@@ -546,5 +543,21 @@ export function Room({ children }: { children: ReactNode }) {
         </div>
       )}
     </RoomProvider>
+    //OJO este es el codigo del chat va justo debajo de 
+    /*
+    <div className={styles.editorContainer}>
+            <ClientSideSuspense fallback={<Loading />}>
+              {() => children}
+            </ClientSideSuspense>
+          </div>
+    */
+    /*<div className={styles.chatAreaWrapper}>
+    <ChatArea 
+              systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
+              userName={userName}
+              //roomId={roomInfo.name || roomId}
+              roomId={roomInfo?.name || 'default-room-name'}
+            />
+            </div>*/
   );
 }
