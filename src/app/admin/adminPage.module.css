@@ -1,0 +1,127 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .title {
+    color: #4A4A49;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2em;
+    font-family: Arial, sans-serif;
+  }
+  
+  .phasesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .phaseCard {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #E6007E;
+    font-family: Arial, sans-serif;
+  }
+  
+  .phaseTitle {
+    color: #662483;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-family: Arial, sans-serif;
+  }
+  
+  .inputGroup {
+    margin-bottom: 15px;
+  }
+  
+  .inputGroup label {
+    display: block;
+    margin-bottom: 5px;
+    color: #4A4A49;
+    font-weight: 500;
+    font-family: Arial, sans-serif;
+  }
+  
+  .input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #C8D300;
+    border-radius: 5px;
+    font-size: 1em;
+    font-family: Arial, sans-serif;
+  }
+  
+  .textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #C8D300;
+    border-radius: 5px;
+    font-size: 1em;
+    resize: vertical;
+    font-family: Arial, sans-serif;
+  }
+  
+  .saveButton {
+    display: block;
+    margin: 0 auto;
+    padding: 12px 30px;
+    background-color: #E6007E;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: Arial, sans-serif;
+  }
+  
+  .saveButton:hover {
+    background-color: #662483;
+  }
+  
+  .saveButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .message {
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  }
+  
+  .success {
+    background-color: #009A93;
+    color: white;
+  }
+  
+  .error {
+    background-color: #E30613;
+    color: white;
+  }
+
+  /* ... estilos anteriores ... */
+
+.helpText {
+    margin-top: 8px;
+    font-size: 0.9em;
+    color: #666;
+    font-style: italic;
+  }
+  
+  /* ... resto de los estilos ... */
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: #662483;
+    font-size: 1.2em;
+  }

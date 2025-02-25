@@ -530,6 +530,14 @@ export function Room({ children }: { children: ReactNode }) {
             </ClientSideSuspense>
           </div>
           
+          <div className={styles.chatAreaWrapper}>
+    <ChatArea 
+              systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
+              userName={userName}
+              //roomId={roomInfo.name || roomId}
+              roomId={roomInfo?.name || 'default-room-name'}
+            />
+            </div>
           
           
         </div>
@@ -542,22 +550,9 @@ export function Room({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
-    </RoomProvider>
-    //OJO este es el codigo del chat va justo debajo de 
-    /*
-    <div className={styles.editorContainer}>
-            <ClientSideSuspense fallback={<Loading />}>
-              {() => children}
-            </ClientSideSuspense>
-          </div>
-    */
-    /*<div className={styles.chatAreaWrapper}>
-    <ChatArea 
-              systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
-              userName={userName}
-              //roomId={roomInfo.name || roomId}
-              roomId={roomInfo?.name || 'default-room-name'}
-            />
-            </div>*/
+    
+    
+    
+            </RoomProvider>
   );
 }

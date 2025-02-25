@@ -229,7 +229,7 @@ const PAUSE_THRESHOLD = 3000;
 
 export default function ThinkPage() {
   const [thought, setThought] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(480);
+  const [timeRemaining, setTimeRemaining] = useState(30);
   const [alias, setAlias] = useState('');
   const [sessionId, setSessionId] = useState<number | null>(null);
   const router = useRouter();
