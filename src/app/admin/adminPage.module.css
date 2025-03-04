@@ -125,3 +125,771 @@
     color: #662483;
     font-size: 1.2em;
   }
+
+/* Estos estilos se pueden agregar al archivo adminPage.module.css existente */
+
+.loginForm, .selectionForm {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.title {
+  color: #4A4A49;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2em;
+  font-family: Arial, sans-serif;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.userName {
+  margin-right: 15px;
+  font-weight: 500;
+  color: #4A4A49;
+}
+
+.logoutButton {
+  background-color: #E30613;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+}
+
+.logoutButton:hover {
+  background-color: #B30000;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #C8D300;
+  border-radius: 5px;
+  font-size: 1em;
+  margin-bottom: 15px;
+  background-color: white;
+}
+
+.helpText {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: -10px;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+
+.contextDisplay {
+  background-color: #f5f5f5;
+  border-left: 5px solid #009A93;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 0 5px 5px 0;
+}
+
+.contextTitle {
+  color: #4A4A49;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.contextInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.contextItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.contextLabel {
+  font-weight: bold;
+  color: #662483;
+  font-size: 0.9em;
+}
+
+.contextValue {
+  color: #4A4A49;
+}
+
+/* Estilos para el panel de administración */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  color: #4A4A49;
+  font-size: 2em;
+  margin: 0;
+}
+
+.subtitle {
+  color: #662483;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #662483;
+  font-size: 1.2em;
+}
+
+.message {
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.success {
+  background-color: #009A93;
+  color: white;
+}
+
+.error {
+  background-color: #E30613;
+  color: white;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 5px;
+  color: #4A4A49;
+  font-weight: 500;
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #C8D300;
+  border-radius: 5px;
+  font-size: 1em;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.contextBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  border-left: 5px solid #E6007E;
+}
+
+.contextInfo {
+  display: flex;
+  gap: 20px;
+}
+
+.contextItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.contextLabel {
+  font-weight: bold;
+  color: #662483;
+  font-size: 0.9em;
+}
+
+.contextValue {
+  color: #4A4A49;
+}
+
+.changeCourseButton {
+  background-color: #662483;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+}
+
+.changeCourseButton:hover {
+  background-color: #4e1c63;
+}
+
+.mainContent {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actionsBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.createButton {
+  background-color: #009A93;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s;
+}
+
+.createButton:hover {
+  background-color: #007a74;
+}
+
+/* Estilos para la lista de configuraciones */
+.configListContainer {
+  width: 100%;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.configTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.configTable th, .configTable td {
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  text-align: left;
+}
+
+.configTable th {
+  background-color: #f5f5f5;
+  color: #4A4A49;
+  font-weight: bold;
+}
+
+.configTable tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.activeRow {
+  background-color: #f0f7ff !important;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.statusActive {
+  background-color: #C8D300;
+  color: #4A4A49;
+}
+
+.statusInactive {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.editButton, .activateButton, .deactivateButton, .linkButton, .statsButton {
+  border: none;
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.editButton {
+  background-color: #662483;
+  color: white;
+}
+
+.editButton:hover {
+  background-color: #4e1c63;
+}
+
+.activateButton {
+  background-color: #C8D300;
+  color: #4A4A49;
+}
+
+.activateButton:hover {
+  background-color: #a8b100;
+}
+
+.deactivateButton {
+  background-color: #e0e0e0;
+  color: #4A4A49;
+}
+
+.deactivateButton:hover {
+  background-color: #c0c0c0;
+}
+
+.linkButton {
+  background-color: #009A93;
+  color: white;
+}
+
+.linkButton:hover {
+  background-color: #007a74;
+}
+
+.statsButton {
+  background-color: #E6007E;
+  color: white;
+}
+
+.statsButton:hover {
+  background-color: #c4006a;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+}
+
+.linkContainer {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-left: 5px solid #009A93;
+}
+
+.linkTitle {
+  color: #009A93;
+  font-size: 1.2em;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.linkBox {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.linkInput {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #C8D300;
+  border-radius: 5px;
+  font-size: 0.9em;
+  background-color: white;
+}
+
+.copyButton {
+  background-color: #662483;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0 15px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.copyButton:hover {
+  background-color: #4e1c63;
+}
+
+.linkInstructions {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 10px;
+}
+
+/* Estilos para el formulario de configuración */
+.configFormContainer {
+  width: 100%;
+}
+
+.formTabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1em;
+  color: #4A4A49;
+  transition: all 0.3s;
+}
+
+.activeTab {
+  border-bottom-color: #E6007E;
+  color: #E6007E;
+  font-weight: bold;
+}
+
+.tabContent {
+  display: none;
+}
+
+.activeTabContent {
+  display: block;
+}
+
+.phaseTitle {
+  color: #009A93;
+  font-size: 1.3em;
+  margin-bottom: 20px;
+}
+
+.helpText {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.saveButton {
+  background-color: #E6007E;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s;
+}
+
+.saveButton:hover {
+  background-color: #c4006a;
+}
+
+.saveButton:disabled {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background-color: transparent;
+  color: #4A4A49;
+  border: 1px solid #4A4A49;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.3s;
+}
+
+.cancelButton:hover {
+  background-color: #f5f5f5;
+}
+
+.existingConfigMessage {
+  background-color: #fff3cd;
+  border-left: 5px solid #ffc107;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #856404;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+
+.secondaryButton {
+  background-color: #4A4A49;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+}
+
+.secondaryButton:hover {
+  background-color: #333;
+}
+
+.promptTemplate {
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+.promptTemplateList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.templateButton {
+  background-color: #662483;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s;
+}
+
+.templateButton:hover {
+  background-color: #4e1c63;
+}
+
+/* Estilos para el panel de estadísticas */
+.statsContainer {
+  width: 100%;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.statCard {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+}
+
+.statValue {
+  font-size: 2em;
+  color: #E6007E;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.statLabel {
+  color: #4A4A49;
+  font-size: 0.9em;
+}
+
+.statsSection {
+  margin-bottom: 30px;
+}
+
+.statsSectionTitle {
+  color: #662483;
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.timeStats {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.timeStat {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.timeStatLabel {
+  width: 100px;
+  font-weight: bold;
+  color: #4A4A49;
+}
+
+.timeStatValue {
+  width: 80px;
+  color: #662483;
+  text-align: right;
+}
+
+.timeStatBar {
+  flex-grow: 1;
+  height: 15px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-left: 15px;
+}
+
+.timeStatBarFill {
+  height: 100%;
+  background-color: #C8D300;
+  border-radius: 10px;
+}
+
+.statsSectionNote {
+  background-color: #f9f9f9;
+  border-left: 3px solid #662483;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.statsActions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.exportButton {
+  background-color: #662483;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s;
+}
+
+.exportButton:hover {
+  background-color: #4e1c63;
+}
+
+.backButton {
+  background-color: #4A4A49;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s;
+}
+
+.backButton:hover {
+  background-color: #333;
+}
+
+/* Estilos para pantallas pequeñas */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .contextBar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .contextInfo {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .configTable th, .configTable td {
+    padding: 8px 5px;
+    font-size: 0.9em;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .formTabs {
+    flex-wrap: wrap;
+  }
+
+  .tabButton {
+    flex-grow: 1;
+    font-size: 0.9em;
+    padding: 8px 10px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeStats {
+    font-size: 0.9em;
+  }
+
+  .statsActions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .exportButton, .backButton {
+    width: 100%;
+  }
+}
