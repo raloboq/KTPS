@@ -15,24 +15,40 @@ export default function Home() {
 'use client';
 
 import { Room } from "@/app/pair/Room";
-import { CollaborativeEditor } from "@/components/CollaborativeEditor"; // Asegúrate de que la ruta sea correcta
+import { CollaborativeEditor } from "@/components/CollaborativeEditor";
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function Home() {
+// Componente de carga para Suspense
+function Loading() {
+  return <div>Cargando...</div>;
+}
+
+// Componente interno que usa useSearchParams
+function PairPageContent() {
   const searchParams = useSearchParams();
   const documentId = searchParams.get('roomId') || 'default-room-id';
   const userName = searchParams.get('alias') || 'Usuario Anónimo';
   const roomName = searchParams.get('roomName') || 'Sala Default';
 
   return (
+    <Room>
+      <CollaborativeEditor 
+        documentId={documentId} 
+        userName={userName} 
+        roomName={roomName} 
+      />
+    </Room>
+  );
+}
+
+// Componente principal envuelto en Suspense
+export default function PairPage() {
+  return (
     <main>
-      <Room>
-        <CollaborativeEditor 
-          documentId={documentId} 
-          userName={userName} 
-          roomName={roomName} 
-        />
-      </Room>
+      <Suspense fallback={<Loading />}>
+        <PairPageContent />
+      </Suspense>
     </main>
   );
 }

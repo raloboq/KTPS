@@ -1,7 +1,7 @@
 // src/app/api/moodle/get-courses/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     // Obtener el token de las cookies de la solicitud

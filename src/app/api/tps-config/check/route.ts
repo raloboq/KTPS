@@ -4,7 +4,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { sql } from '@vercel/postgres';
-
+export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     // Obtener el ID del usuario de Moodle desde las cookies
