@@ -124,6 +124,7 @@ async function saveUserToLocalDB(user: any) {
 }*/
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { QueryResult } from 'pg';
 
 export async function POST(request: Request) {
   try {
@@ -216,13 +217,13 @@ export async function POST(request: Request) {
 async function saveUserToLocalDB(user: any) {
   try {
     // Verificar si el usuario ya existe en nuestra base de datos
-    const checkResult = await pool.query(
+    const checkResult: QueryResult = await pool.query(
       'SELECT id FROM moodle_users WHERE moodle_user_id = $1',
       [user.id]
     );
     
     // Si no existe, lo agregamos
-    if (checkResult.rowCount === 0) {
+    if (!checkResult.rowCount || checkResult.rowCount === 0) {
       await pool.query(
         `INSERT INTO moodle_users (
           moodle_user_id, 

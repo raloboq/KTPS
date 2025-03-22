@@ -104,6 +104,7 @@ export async function PUT(
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
+import { QueryResult } from 'pg';
 
 export async function PUT(
   request: Request,
@@ -145,7 +146,7 @@ export async function PUT(
     await client.query('BEGIN');
 
     // Verificar que la configuración exista y pertenezca al usuario
-    const existingConfigResult = await client.query(
+    const existingConfigResult: QueryResult = await client.query(
       `SELECT 
         id, 
         moodle_course_id, 
@@ -158,7 +159,7 @@ export async function PUT(
       [id, userId]
     );
 
-    if (existingConfigResult.rowCount === 0) {
+    if (!existingConfigResult.rowCount || existingConfigResult.rowCount === 0) {
       await client.query('ROLLBACK');
       return NextResponse.json({ 
         success: false, 

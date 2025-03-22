@@ -214,9 +214,11 @@ export async function DELETE(
   }
 }*/
 // src/app/api/tps-config/[id]/route.ts
+// src/app/api/tps-config/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
+import { QueryResult } from 'pg';
 
 // GET: Obtener una configuración específica por ID
 export async function GET(
@@ -246,7 +248,7 @@ export async function GET(
     const userId = parseInt(userIdStr);
 
     // Obtener la configuración junto con datos del curso y la asignación
-    const result = await pool.query(
+    const result: QueryResult = await pool.query(
       `SELECT 
         tc.*, 
         mc.name as course_name, 
@@ -263,7 +265,7 @@ export async function GET(
       [id, userId]
     );
 
-    if (result.rowCount === 0) {
+    if (!result.rowCount || result.rowCount === 0) {
       return NextResponse.json({ 
         success: false, 
         error: 'Configuración no encontrada' 
@@ -317,13 +319,13 @@ export async function PUT(
     await client.query('BEGIN');
 
     // Verificar que la configuración exista y pertenezca al usuario
-    const existingConfig = await client.query(
+    const existingConfig: QueryResult = await client.query(
       `SELECT id FROM tps_configurations 
        WHERE id = $1 AND moodle_user_id = $2`,
       [id, userId]
     );
 
-    if (existingConfig.rowCount === 0) {
+    if (!existingConfig.rowCount || existingConfig.rowCount === 0) {
       await client.query('ROLLBACK');
       return NextResponse.json({ 
         success: false, 
@@ -426,13 +428,13 @@ export async function DELETE(
     await client.query('BEGIN');
 
     // Verificar que la configuración exista y pertenezca al usuario
-    const existingConfig = await client.query(
+    const existingConfig: QueryResult = await client.query(
       `SELECT id FROM tps_configurations 
        WHERE id = $1 AND moodle_user_id = $2`,
       [id, userId]
     );
 
-    if (existingConfig.rowCount === 0) {
+    if (!existingConfig.rowCount || existingConfig.rowCount === 0) {
       await client.query('ROLLBACK');
       return NextResponse.json({ 
         success: false, 

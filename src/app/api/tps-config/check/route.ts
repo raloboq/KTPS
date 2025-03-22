@@ -99,9 +99,11 @@ export async function GET(request: Request) {
   }
 }*/
 // src/app/api/tps-config/check/route.ts
+// src/app/api/tps-config/check/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
+import { QueryResult } from 'pg';
 
 export async function GET(request: Request) {
   try {
@@ -148,7 +150,7 @@ export async function GET(request: Request) {
     }
 
     // Buscar configuración activa para el curso y actividad especificados
-    const result = await pool.query(
+    const result: QueryResult = await pool.query(
       `SELECT 
         tc.*, 
         mc.name as course_name, 
@@ -167,7 +169,7 @@ export async function GET(request: Request) {
       [userId, courseId, assignmentId]
     );
 
-    if (result.rowCount === 0) {
+    if (!result.rowCount || result.rowCount === 0) {
       return NextResponse.json({ 
         success: true, 
         data: null,
