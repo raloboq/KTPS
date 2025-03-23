@@ -94,7 +94,7 @@ class SocketAwareness {
 }
 
 export class SocketIOProvider {
-  private socket: Socket;
+  private socket!: Socket;
   doc: Y.Doc;
   private documentId: string;
   private userName: string;
