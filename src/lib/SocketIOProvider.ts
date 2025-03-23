@@ -427,12 +427,14 @@ export class SocketIOProvider {
   clientId: string; // ID único para este cliente
   awareness: SocketAwareness;
   private _connected = false;
+  private _reconnecting = false;
   private _reconnectAttempts = 0;
   private _maxReconnectAttempts = 10;
   private _callbacks = new Map<string, Set<Function>>();
   private _pingInterval: NodeJS.Timeout | null = null;
   private _connectionCheckInterval: NodeJS.Timeout | null = null;
   private _documentUpdateHandler: (update: Uint8Array, origin: any) => void;
+  private _sessionErrorDetected = false;
 
   constructor(doc: Y.Doc, documentId: string, userName: string, userInfo: UserInfo) {
     this.doc = doc;
@@ -442,42 +444,51 @@ export class SocketIOProvider {
     this.clientId = Math.random().toString(36).substring(2, 15);
     this.awareness = new SocketAwareness(this);
     
+    // Generar un ID único para este cliente en esta sesión
+    const sessionClientId = `${this.clientId}-${Date.now()}`;
+    
     // Asegurar que tenemos un protocolo y host válidos
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
     console.log('Conectando a Socket.IO en:', socketUrl, {
       documentId,
       userName,
-      clientId: this.clientId
+      clientId: sessionClientId
     });
 
     // Definir el manejador de actualizaciones del documento fuera del constructor
     this._documentUpdateHandler = this.onDocumentUpdate.bind(this);
 
     try {
-      // Configuración del socket con enfoque en estabilidad
+      // Configuración del socket con enfoque en evitar problemas de ID de sesión
       this.socket = io(socketUrl, {
-        // CRÍTICO: Usar solo polling para coincidir con el servidor
+        // IMPORTANTE: Usar solo polling para mayor estabilidad
         transports: ['polling'],
         upgrade: false,
         
-        // Configuración de reconexión
+        // Configuración para manejar errores de sesión
         reconnection: true,
-        reconnectionAttempts: Infinity, // Intentar reconectar indefinidamente
-        reconnectionDelay: 1000,        // Empezar con 1 segundo de retraso
-        reconnectionDelayMax: 10000,    // Máximo 10 segundos de retraso
+        reconnectionAttempts: 5,      // Intentar reconectar 5 veces antes de crear un socket nuevo
+        reconnectionDelay: 1000,      // Comenzar con 1 segundo
+        reconnectionDelayMax: 5000,   // Máximo 5 segundos
+        randomizationFactor: 0.5,     // Factor de aleatoriedad en los tiempos
         
-        // Configuración de timeouts
-        timeout: 60000,                // 60 segundos para establecer conexión
+        // Evitar timeouts cortos
+        timeout: 20000,               // 20 segundos para conexión inicial
         
         // Información para el servidor
         query: {
           roomId: documentId,
-          userName: userName
+          userName: userName,
+          clientId: sessionClientId    // Incluir el ID del cliente para mejor tracking
         },
         
-        // Otras configuraciones para estabilidad
-        forceNew: true,                // Forzar nueva conexión
-        withCredentials: false,        // Evitar envío de cookies
+        // Otras configuraciones críticas
+        forceNew: true,               // Forzar una nueva conexión (no reutilizar)
+        withCredentials: false,       // No enviar cookies
+        autoConnect: true,            // Conectar automáticamente
+
+        // Configuración adicional para evitar problemas de sesión
+        path: '/socket.io/',          // Asegurarnos de la ruta correcta
       });
 
       console.log('Socket creado con opciones:', this.socket.io.opts);
@@ -486,6 +497,12 @@ export class SocketIOProvider {
       this.socket.on('connect', this.onConnect.bind(this));
       this.socket.on('disconnect', this.onDisconnect.bind(this));
       this.socket.on('connect_error', this.onConnectError.bind(this));
+      this.socket.on('error', this.onError.bind(this));
+      this.socket.on('reconnect_attempt', this.onReconnectAttempt.bind(this));
+      this.socket.on('reconnect_error', this.onReconnectError.bind(this));
+      this.socket.on('reconnect_failed', this.onReconnectFailed.bind(this));
+      
+      // Listeners específicos de la aplicación
       this.socket.on('sync-document', this.onSyncDocument.bind(this));
       this.socket.on('sync-update', this.onUpdate.bind(this));
       this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
@@ -508,7 +525,9 @@ export class SocketIOProvider {
   private onConnect() {
     console.log('🟢 Conectado al servidor Socket.io con ID:', this.socket.id);
     this._connected = true;
+    this._reconnecting = false;
     this._reconnectAttempts = 0;
+    this._sessionErrorDetected = false;
     
     // Unirse al documento inmediatamente
     this.socket.emit('join-document', this.documentId, this.userName);
@@ -520,7 +539,6 @@ export class SocketIOProvider {
     
     this._pingInterval = setInterval(() => {
       if (this._connected) {
-        console.log('Enviando ping para mantener conexión activa');
         this.socket.emit('ping', { 
           timestamp: Date.now(),
           clientId: this.clientId
@@ -535,6 +553,14 @@ export class SocketIOProvider {
     console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
     this._connected = false;
     
+    // Verificar si hay un problema con la ID de sesión
+    if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+      console.log('Desconexión solicitada por el servidor o cliente, creando nueva conexión');
+      this._sessionErrorDetected = true;
+      this.recreateSocket(); // El servidor nos desconectó, mejor crear una conexión nueva
+      return;
+    }
+    
     // Limpiar el intervalo de ping al desconectar
     if (this._pingInterval) {
       clearInterval(this._pingInterval);
@@ -542,27 +568,75 @@ export class SocketIOProvider {
     }
     
     this.emit('status', { connected: false, reason });
-    
-    // Si es una desconexión por transporte cerrado, intentar reconectar manualmente
-    if (reason === 'transport close' || reason === 'transport error') {
-      console.log('Desconexión por problemas de transporte, intentando reconexión manual en 2 segundos...');
-      setTimeout(() => {
-        this.handleReconnection();
-      }, 2000);
-    }
   }
 
   private onConnectError(error: Error) {
-    console.error('🔴 Error de conexión al servidor Socket.io:', error, {
-      message: error.message,
-      details: JSON.stringify(error)
-    });
+    console.error('🔴 Error de conexión al servidor Socket.io:', error);
+    
+    // Verificar si es un error de sesión
+    if (
+      error.message.includes('Session ID unknown') || 
+      error.message.includes('Invalid session') ||
+      error.message.includes('Session closed')
+    ) {
+      console.log('Detectado error de sesión, recreando socket en lugar de reconectar');
+      this._sessionErrorDetected = true;
+      this.recreateSocket();
+      return;
+    }
+    
     this._reconnectAttempts++;
     
     if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-      console.error('🔴 Número máximo de intentos de reconexión alcanzado, intentando reconexión manual');
-      this.handleReconnection();
+      console.error('🔴 Número máximo de intentos de reconexión alcanzado, recreando socket');
+      this.recreateSocket();
     }
+  }
+  
+  private onError(error: Error) {
+    console.error('Error en socket:', error);
+    
+    // Verificar si es un error relacionado con la sesión
+    if (
+      error.message.includes('Session ID unknown') || 
+      error.message.includes('Invalid session')
+    ) {
+      console.log('Detectado error de sesión, recreando socket');
+      this._sessionErrorDetected = true;
+      this.recreateSocket();
+    }
+  }
+  
+  private onReconnectAttempt(attemptNumber: number) {
+    console.log(`Intento de reconexión #${attemptNumber}`);
+    this._reconnecting = true;
+    
+    // Si detectamos un error de sesión, detener los intentos de reconexión
+    if (this._sessionErrorDetected) {
+      console.log('Error de sesión detectado, cancelando reconexión');
+      this.socket.disconnect();
+      this.recreateSocket();
+    }
+  }
+  
+  private onReconnectError(error: Error) {
+    console.error('Error durante reconexión:', error);
+    
+    // Verificar si es un error relacionado con la sesión
+    if (
+      error.message.includes('Session ID unknown') || 
+      error.message.includes('Invalid session')
+    ) {
+      console.log('Error de sesión en reconexión, recreando socket');
+      this._sessionErrorDetected = true;
+      this.recreateSocket();
+    }
+  }
+  
+  private onReconnectFailed() {
+    console.error('Falló la reconexión después de todos los intentos');
+    this._reconnecting = false;
+    this.recreateSocket();
   }
 
   private onSyncDocument(update: Uint8Array) {
@@ -637,6 +711,12 @@ export class SocketIOProvider {
   }
   
   private checkConnectionHealth() {
+    // Si estamos en medio de una reconexión, no interferir
+    if (this._reconnecting) {
+      console.log('Verificación de salud saltada: reconexión en progreso');
+      return;
+    }
+    
     // Verificar si el socket está realmente conectado según Socket.io
     const isSocketConnected = this.socket && this.socket.connected;
     
@@ -645,60 +725,24 @@ export class SocketIOProvider {
       console.warn('Inconsistencia de estado: _connected=true pero socket.connected=false, corrigiendo...');
       this._connected = false;
       this.emit('status', { connected: false, reason: 'Inconsistencia de estado detectada' });
-    }
-    
-    // Si no está conectado, intentar reconectar
-    if (!this._connected) {
-      console.log('Socket no conectado en verificación de salud, intentando reconexión...');
-      this.handleReconnection();
-    } else {
+      
+      // Si detectamos un error de sesión, recrear el socket
+      if (this._sessionErrorDetected) {
+        this.recreateSocket();
+      } else {
+        // Intentar reconectar normalmente
+        this.socket.connect();
+      }
+    } else if (isSocketConnected) {
       // Enviar un ping para verificar la conexión
-      console.log('Verificación de salud: Socket aparentemente conectado, enviando ping de prueba...');
       this.socket.emit('ping', { timestamp: Date.now(), clientId: this.clientId });
     }
   }
 
-  /**
-   * Maneja la reconexión manual y la sincronización del documento
-   */
-  handleReconnection() {
-    console.log('Intentando reconexión manual...');
-    
-    // Si ya estamos conectados, no hacemos nada
-    if (this._connected && this.socket.connected) {
-      console.log('Ya estamos conectados, no es necesario reconectar');
-      return;
-    }
-    
-    // Si la conexión está cerrada, la volvemos a abrir
-    if (!this.socket.connected) {
-      console.log('Socket desconectado, intentando conectar nuevamente');
-      
-      // Desconectar el socket actual antes de reconectar
-      this.socket.disconnect();
-      
-      // Reconectar con un pequeño retraso
-      setTimeout(() => {
-        console.log('Intentando conectar después de desconexión manual...');
-        this.socket.connect();
-        
-        // Verificar si la conexión tuvo éxito después de un tiempo
-        setTimeout(() => {
-          if (!this._connected) {
-            console.log('La reconexión parece haber fallado, creando nuevo socket...');
-            this.recreateSocket();
-          } else {
-            console.log('Reconexión exitosa mediante socket.connect()');
-          }
-        }, 5000);
-      }, 1000);
-    } else {
-      this.recreateSocket();
-    }
-  }
-  
   // Método para recrear completamente el socket
   private recreateSocket() {
+    console.log('Recreando socket por completo');
+    
     try {
       // Limpiar los intervalos actuales
       if (this._pingInterval) {
@@ -710,18 +754,30 @@ export class SocketIOProvider {
       this.doc.off('update', this._documentUpdateHandler);
       
       // Destruir el socket actual
-      this.socket.disconnect();
+      if (this.socket) {
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+      }
       
-      // Crear un nuevo socket con configuración simplificada
+      // Crear un nuevo socket con configuración simplificada y forzando una nueva conexión
       const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
+      
+      // Crear un nuevo ID de cliente único para evitar problemas con sesiones anteriores
+      const newSessionClientId = `${this.clientId}-${Date.now()}`;
+      
       this.socket = io(socketUrl, {
         transports: ['polling'],
         upgrade: false,
-        reconnection: false,
-        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        forceNew: true,         // CRÍTICO: Forzar una nueva conexión
+        autoConnect: true,      // Conectar inmediatamente
+        path: '/socket.io/',    // Especificar la ruta para evitar problemas
         query: {
           roomId: this.documentId,
-          userName: this.userName
+          userName: this.userName,
+          clientId: newSessionClientId, // Usar el nuevo ID de cliente
+          forceNew: 'true'      // Indicar al servidor que es una nueva conexión
         }
       });
       
@@ -729,6 +785,11 @@ export class SocketIOProvider {
       this.socket.on('connect', this.onConnect.bind(this));
       this.socket.on('disconnect', this.onDisconnect.bind(this));
       this.socket.on('connect_error', this.onConnectError.bind(this));
+      this.socket.on('error', this.onError.bind(this));
+      this.socket.on('reconnect_attempt', this.onReconnectAttempt.bind(this));
+      this.socket.on('reconnect_error', this.onReconnectError.bind(this));
+      this.socket.on('reconnect_failed', this.onReconnectFailed.bind(this));
+      
       this.socket.on('sync-document', this.onSyncDocument.bind(this));
       this.socket.on('sync-update', this.onUpdate.bind(this));
       this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
@@ -739,7 +800,12 @@ export class SocketIOProvider {
       // Re-agregar el listener de documento
       this.doc.on('update', this._documentUpdateHandler);
       
-      console.log('Socket recreado, intentando conectar nuevamente...');
+      // Resetear banderas
+      this._sessionErrorDetected = false;
+      this._reconnectAttempts = 0;
+      this._reconnecting = false;
+      
+      console.log('Socket recreado, conectando con nuevo ID de cliente:', newSessionClientId);
     } catch (error) {
       console.error('Error al recrear el socket:', error);
       this.emit('error', { message: 'Error grave de conexión. Por favor recarga la página.' });
@@ -824,7 +890,17 @@ export class SocketIOProvider {
     
     this.doc.off('update', this._documentUpdateHandler);
     this.awareness.destroy();
-    this.socket.disconnect();
+    
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+    
     this._callbacks.clear();
+  }
+  
+  // Método público para forzar una reconexión desde cero (útil si la aplicación detecta problemas)
+  reconnect() {
+    console.log('Forzando reconexión desde el exterior');
+    this.recreateSocket();
   }
 }
