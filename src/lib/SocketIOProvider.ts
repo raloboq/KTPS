@@ -428,9 +428,11 @@ export class SocketIOProvider {
   awareness: SocketAwareness;
   private _connected = false;
   private _reconnectAttempts = 0;
-  private _maxReconnectAttempts = 5;
+  private _maxReconnectAttempts = 10;
   private _callbacks = new Map<string, Set<Function>>();
   private _pingInterval: NodeJS.Timeout | null = null;
+  private _connectionCheckInterval: NodeJS.Timeout | null = null;
+  private _documentUpdateHandler: (update: Uint8Array, origin: any) => void;
 
   constructor(doc: Y.Doc, documentId: string, userName: string, userInfo: UserInfo) {
     this.doc = doc;
@@ -448,19 +450,34 @@ export class SocketIOProvider {
       clientId: this.clientId
     });
 
+    // Definir el manejador de actualizaciones del documento fuera del constructor
+    this._documentUpdateHandler = this.onDocumentUpdate.bind(this);
+
     try {
-      // IMPORTANTE: Configuración modificada para usar solo polling (igual que el servidor)
+      // Configuración del socket con enfoque en estabilidad
       this.socket = io(socketUrl, {
-        transports: ['polling'],  // Usar SOLO polling
-        upgrade: false,           // No intentar actualizar a WebSocket
+        // CRÍTICO: Usar solo polling para coincidir con el servidor
+        transports: ['polling'],
+        upgrade: false,
+        
+        // Configuración de reconexión
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 10,
-        timeout: 20000,
+        reconnectionAttempts: Infinity, // Intentar reconectar indefinidamente
+        reconnectionDelay: 1000,        // Empezar con 1 segundo de retraso
+        reconnectionDelayMax: 10000,    // Máximo 10 segundos de retraso
+        
+        // Configuración de timeouts
+        timeout: 60000,                // 60 segundos para establecer conexión
+        
+        // Información para el servidor
         query: {
           roomId: documentId,
           userName: userName
-        }
+        },
+        
+        // Otras configuraciones para estabilidad
+        forceNew: true,                // Forzar nueva conexión
+        withCredentials: false,        // Evitar envío de cookies
       });
 
       console.log('Socket creado con opciones:', this.socket.io.opts);
@@ -474,68 +491,18 @@ export class SocketIOProvider {
       this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
       this.socket.on('user-joined', this.onUserJoined.bind(this));
       this.socket.on('user-left', this.onUserLeft.bind(this));
+      this.socket.on('pong', this.onPong.bind(this));
+      
+      // Crear un intervalo para verificar la salud de la conexión
+      this._connectionCheckInterval = setInterval(() => {
+        this.checkConnectionHealth();
+      }, 15000); // Cada 15 segundos
       
       // Escuchar cambios locales del documento
-      doc.on('update', this.onDocumentUpdate.bind(this));
+      doc.on('update', this._documentUpdateHandler);
     } catch (error) {
       console.error('Error al inicializar Socket.IO:', error);
     }
-  }
-
-
-  private handleReconnection() {
-    console.log('Intentando reconexión manual...');
-    
-    // Si ya estamos conectados, no hacemos nada
-    if (this._connected) {
-      console.log('Ya estamos conectados, no es necesario reconectar');
-      return;
-    }
-    
-    // Si la conexión está cerrada, la volvemos a abrir
-    if (this.socket.disconnected) {
-      console.log('Socket desconectado, intentando conectar nuevamente');
-      this.socket.connect();
-    }
-    
-    // Establecer un timeout para verificar si la conexión tuvo éxito
-    setTimeout(() => {
-      if (!this._connected) {
-        console.log('Reconexión fallida, intentando una vez más...');
-        
-        // Intentar un enfoque más agresivo si todavía no estamos conectados
-        try {
-          // Destruir el socket actual
-          this.socket.disconnect();
-          
-          // Crear un nuevo socket con configuración simplificada
-          const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
-          this.socket = io(socketUrl, {
-            transports: ['polling'],
-            reconnection: false,
-            query: {
-              roomId: this.documentId,
-              userName: this.userName
-            }
-          });
-          
-          // Reinstalar todos los listeners
-          this.socket.on('connect', this.onConnect.bind(this));
-          this.socket.on('disconnect', this.onDisconnect.bind(this));
-          this.socket.on('connect_error', this.onConnectError.bind(this));
-          this.socket.on('sync-document', this.onSyncDocument.bind(this));
-          this.socket.on('sync-update', this.onUpdate.bind(this));
-          this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
-          this.socket.on('user-joined', this.onUserJoined.bind(this));
-          this.socket.on('user-left', this.onUserLeft.bind(this));
-          
-          console.log('Socket recreado, intentando conectar nuevamente');
-        } catch (error) {
-          console.error('Error al recrear el socket:', error);
-          this.emit('error', { message: 'Error grave de conexión. Por favor recarga la página.' });
-        }
-      }
-    }, 3000);
   }
 
   private onConnect() {
@@ -543,7 +510,7 @@ export class SocketIOProvider {
     this._connected = true;
     this._reconnectAttempts = 0;
     
-    // Unirse al documento
+    // Unirse al documento inmediatamente
     this.socket.emit('join-document', this.documentId, this.userName);
     
     // Programar un ping regular para mantener activa la conexión
@@ -554,9 +521,12 @@ export class SocketIOProvider {
     this._pingInterval = setInterval(() => {
       if (this._connected) {
         console.log('Enviando ping para mantener conexión activa');
-        this.socket.emit('ping', { timestamp: Date.now() });
+        this.socket.emit('ping', { 
+          timestamp: Date.now(),
+          clientId: this.clientId
+        });
       }
-    }, 20000); // Ping cada 20 segundos
+    }, 10000); // Ping cada 10 segundos
     
     this.emit('status', { connected: true });
   }
@@ -572,9 +542,17 @@ export class SocketIOProvider {
     }
     
     this.emit('status', { connected: false, reason });
+    
+    // Si es una desconexión por transporte cerrado, intentar reconectar manualmente
+    if (reason === 'transport close' || reason === 'transport error') {
+      console.log('Desconexión por problemas de transporte, intentando reconexión manual en 2 segundos...');
+      setTimeout(() => {
+        this.handleReconnection();
+      }, 2000);
+    }
   }
 
-  /*private onConnectError(error: Error) {
+  private onConnectError(error: Error) {
     console.error('🔴 Error de conexión al servidor Socket.io:', error, {
       message: error.message,
       details: JSON.stringify(error)
@@ -582,39 +560,41 @@ export class SocketIOProvider {
     this._reconnectAttempts++;
     
     if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-      console.error('🔴 Número máximo de intentos de reconexión alcanzado');
-      this.emit('error', { message: 'No se pudo conectar al servidor de colaboración' });
+      console.error('🔴 Número máximo de intentos de reconexión alcanzado, intentando reconexión manual');
+      this.handleReconnection();
     }
-  }*/
-    private onConnectError(error: Error) {
-        console.error('🔴 Error de conexión al servidor Socket.io:', error, {
-          message: error.message,
-          details: JSON.stringify(error)
-        });
-        this._reconnectAttempts++;
-        
-        if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-          console.error('🔴 Número máximo de intentos de reconexión alcanzado, intentando reconexión manual');
-          this.handleReconnection();
-        }
-      }
+  }
 
   private onSyncDocument(update: Uint8Array) {
     console.log('Recibido estado inicial del documento');
-    Y.applyUpdate(this.doc, update);
-    this.emit('synced', {});
+    try {
+      Y.applyUpdate(this.doc, update);
+      this.emit('synced', {});
+    } catch (error) {
+      console.error('Error al aplicar actualización inicial:', error);
+    }
   }
 
   private onUpdate(update: Uint8Array) {
     console.log('Recibida actualización del documento');
-    Y.applyUpdate(this.doc, update);
+    try {
+      Y.applyUpdate(this.doc, update);
+    } catch (error) {
+      console.error('Error al aplicar actualización:', error);
+      // Solicitar resincronización completa en caso de error
+      this.sync();
+    }
   }
 
   private onDocumentUpdate(update: Uint8Array, origin: any) {
     // Solo enviar actualizaciones que no vinieron del servidor
     if (origin !== this && this._connected) {
       console.log('Enviando actualización al servidor');
-      this.socket.emit('sync-update', update);
+      try {
+        this.socket.emit('sync-update', update);
+      } catch (error) {
+        console.error('Error al enviar actualización:', error);
+      }
     }
   }
 
@@ -651,18 +631,137 @@ export class SocketIOProvider {
     // Quitar el usuario del awareness
     this.awareness.removeRemoteState(data.socketId);
   }
+  
+  private onPong(data: any) {
+    console.log('Pong recibido del servidor:', data);
+  }
+  
+  private checkConnectionHealth() {
+    // Verificar si el socket está realmente conectado según Socket.io
+    const isSocketConnected = this.socket && this.socket.connected;
+    
+    // Si nuestro estado dice conectado pero el socket no lo está
+    if (this._connected && !isSocketConnected) {
+      console.warn('Inconsistencia de estado: _connected=true pero socket.connected=false, corrigiendo...');
+      this._connected = false;
+      this.emit('status', { connected: false, reason: 'Inconsistencia de estado detectada' });
+    }
+    
+    // Si no está conectado, intentar reconectar
+    if (!this._connected) {
+      console.log('Socket no conectado en verificación de salud, intentando reconexión...');
+      this.handleReconnection();
+    } else {
+      // Enviar un ping para verificar la conexión
+      console.log('Verificación de salud: Socket aparentemente conectado, enviando ping de prueba...');
+      this.socket.emit('ping', { timestamp: Date.now(), clientId: this.clientId });
+    }
+  }
+
+  /**
+   * Maneja la reconexión manual y la sincronización del documento
+   */
+  handleReconnection() {
+    console.log('Intentando reconexión manual...');
+    
+    // Si ya estamos conectados, no hacemos nada
+    if (this._connected && this.socket.connected) {
+      console.log('Ya estamos conectados, no es necesario reconectar');
+      return;
+    }
+    
+    // Si la conexión está cerrada, la volvemos a abrir
+    if (!this.socket.connected) {
+      console.log('Socket desconectado, intentando conectar nuevamente');
+      
+      // Desconectar el socket actual antes de reconectar
+      this.socket.disconnect();
+      
+      // Reconectar con un pequeño retraso
+      setTimeout(() => {
+        console.log('Intentando conectar después de desconexión manual...');
+        this.socket.connect();
+        
+        // Verificar si la conexión tuvo éxito después de un tiempo
+        setTimeout(() => {
+          if (!this._connected) {
+            console.log('La reconexión parece haber fallado, creando nuevo socket...');
+            this.recreateSocket();
+          } else {
+            console.log('Reconexión exitosa mediante socket.connect()');
+          }
+        }, 5000);
+      }, 1000);
+    } else {
+      this.recreateSocket();
+    }
+  }
+  
+  // Método para recrear completamente el socket
+  private recreateSocket() {
+    try {
+      // Limpiar los intervalos actuales
+      if (this._pingInterval) {
+        clearInterval(this._pingInterval);
+        this._pingInterval = null;
+      }
+      
+      // Eliminar los event listeners antiguos
+      this.doc.off('update', this._documentUpdateHandler);
+      
+      // Destruir el socket actual
+      this.socket.disconnect();
+      
+      // Crear un nuevo socket con configuración simplificada
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
+      this.socket = io(socketUrl, {
+        transports: ['polling'],
+        upgrade: false,
+        reconnection: false,
+        forceNew: true,
+        query: {
+          roomId: this.documentId,
+          userName: this.userName
+        }
+      });
+      
+      // Reinstalar todos los listeners
+      this.socket.on('connect', this.onConnect.bind(this));
+      this.socket.on('disconnect', this.onDisconnect.bind(this));
+      this.socket.on('connect_error', this.onConnectError.bind(this));
+      this.socket.on('sync-document', this.onSyncDocument.bind(this));
+      this.socket.on('sync-update', this.onUpdate.bind(this));
+      this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
+      this.socket.on('user-joined', this.onUserJoined.bind(this));
+      this.socket.on('user-left', this.onUserLeft.bind(this));
+      this.socket.on('pong', this.onPong.bind(this));
+      
+      // Re-agregar el listener de documento
+      this.doc.on('update', this._documentUpdateHandler);
+      
+      console.log('Socket recreado, intentando conectar nuevamente...');
+    } catch (error) {
+      console.error('Error al recrear el socket:', error);
+      this.emit('error', { message: 'Error grave de conexión. Por favor recarga la página.' });
+    }
+  }
 
   // Método para enviar actualizaciones de cursor
   setCursor(position: CursorPosition | null) {
     if (this._connected) {
-      this.socket.emit('cursor-update', { cursor: position });
+      try {
+        this.socket.emit('cursor-update', { cursor: position });
+      } catch (error) {
+        console.error('Error al enviar actualización de cursor:', error);
+      }
     }
     return this;
   }
 
   // Método para verificar si está conectado
   isConnected() {
-    return this._connected;
+    // Comprobar tanto nuestro estado interno como el estado del socket
+    return this._connected && this.socket.connected;
   }
 
   // Sistema de eventos simple
@@ -686,6 +785,7 @@ export class SocketIOProvider {
   // Solicitar documento completo al servidor (útil para sincronización manual)
   sync() {
     if (this._connected) {
+      console.log('Solicitando sincronización completa del documento');
       this.socket.emit('sync-request', this.documentId);
     }
     return this;
@@ -717,7 +817,12 @@ export class SocketIOProvider {
       this._pingInterval = null;
     }
     
-    this.doc.off('update', this.onDocumentUpdate);
+    if (this._connectionCheckInterval) {
+      clearInterval(this._connectionCheckInterval);
+      this._connectionCheckInterval = null;
+    }
+    
+    this.doc.off('update', this._documentUpdateHandler);
     this.awareness.destroy();
     this.socket.disconnect();
     this._callbacks.clear();
