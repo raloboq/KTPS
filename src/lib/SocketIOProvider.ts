@@ -116,8 +116,12 @@ export class SocketIOProvider {
     
     // Asegurar que tenemos un protocolo y host válidos
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
-    console.log('Conectando a Socket.IO en:', socketUrl);
-    
+    //console.log('Conectando a Socket.IO en:', socketUrl);
+    console.log(`Intentando conectar a Socket.IO en: ${socketUrl} con parámetros:`, {
+        roomId: documentId,
+        userName: userName
+      });
+
     try {
       // Mejorar opciones de Socket.io
       this.socket = io(socketUrl, {
@@ -129,6 +133,7 @@ export class SocketIOProvider {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
+        transports: ['websocket', 'polling'], // Intentar ambos métodos de transporte
         autoConnect: true
       });
       
@@ -150,7 +155,7 @@ export class SocketIOProvider {
   }
 
   private onConnect() {
-    console.log('Conectado al servidor Socket.io');
+    console.log(`Socket.IO conectado con ID: ${this.socket.id}`);
     this._connected = true;
     this._reconnectAttempts = 0;
     this.socket.emit('join-document', this.documentId, this.userName);
@@ -158,7 +163,7 @@ export class SocketIOProvider {
   }
 
   private onDisconnect(reason: string) {
-    console.log('Desconectado del servidor Socket.io:', reason);
+    console.log(`Socket.IO desconectado. Razón: ${reason}`);
     this._connected = false;
     this.emit('status', { connected: false, reason });
   }
