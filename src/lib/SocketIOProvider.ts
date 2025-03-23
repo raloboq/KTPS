@@ -117,9 +117,10 @@ export class SocketIOProvider {
     // Asegurar que tenemos un protocolo y host válidos
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
     //console.log('Conectando a Socket.IO en:', socketUrl);
-    console.log(`Intentando conectar a Socket.IO en: ${socketUrl} con parámetros:`, {
-        roomId: documentId,
-        userName: userName
+    console.log('Conectando a Socket.IO en:', socketUrl, {
+        documentId,
+        userName,
+        clientId: this.clientId
       });
 
     try {
@@ -136,6 +137,8 @@ export class SocketIOProvider {
         transports: ['websocket', 'polling'], // Intentar ambos métodos de transporte
         autoConnect: true
       });
+
+      console.log('Socket creado con opciones:', this.socket.io.opts);
       
       // Configurar event listeners
       this.socket.on('connect', this.onConnect.bind(this));
@@ -155,7 +158,7 @@ export class SocketIOProvider {
   }
 
   private onConnect() {
-    console.log(`Socket.IO conectado con ID: ${this.socket.id}`);
+    console.log('🟢 Conectado al servidor Socket.io con ID:', this.socket.id);
     this._connected = true;
     this._reconnectAttempts = 0;
     this.socket.emit('join-document', this.documentId, this.userName);
@@ -163,18 +166,21 @@ export class SocketIOProvider {
   }
 
   private onDisconnect(reason: string) {
-    console.log(`Socket.IO desconectado. Razón: ${reason}`);
+    console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
     this._connected = false;
     this.emit('status', { connected: false, reason });
   }
 
   private onConnectError(error: Error) {
-    console.error('Error de conexión al servidor Socket.io:', error);
+    console.error('🔴 Error de conexión al servidor Socket.io:', error, {
+        message: error.message,
+        details: JSON.stringify(error)
+      })
     this._reconnectAttempts++;
     
     if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-      console.error('Número máximo de intentos de reconexión alcanzado');
-      this.emit('error', { message: 'No se pudo conectar al servidor de colaboración' });
+        console.error('🔴 Número máximo de intentos de reconexión alcanzado');
+        this.emit('error', { message: 'No se pudo conectar al servidor de colaboración' });
     }
   }
 

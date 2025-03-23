@@ -257,6 +257,14 @@ export function CollaborativeEditor({
   provider?: SocketIOProvider;
   doc?: Y.Doc;
 }) {
+    // Añadir al inicio de la función
+    console.log("CollaborativeEditor renderizado con:", { 
+      documentId, 
+      userName, 
+      roomName, 
+      providerExists: !!provider, 
+      docExists: !!doc 
+    });
   const [sessionId, setSessionId] = useState<number | null>(null);
   const interactionsQueueRef = useRef<Array<{ tipo: string; detalles: any }>>([]);
   const lastCapturedContentRef = useRef('');
@@ -274,7 +282,9 @@ export function CollaborativeEditor({
   // Inicializar YJS y Socket.io provider si no se proporcionan como props
   useEffect(() => {
     if (!provider && !doc && documentId && userName) {
-      console.log('Inicializando doc y provider localmente');
+        console.log('Inicializando doc y provider localmente para:', documentId, userName);
+     
+     // console.log('Inicializando doc y provider localmente');
       const yDoc = new Y.Doc();
       
       try {
@@ -288,7 +298,7 @@ export function CollaborativeEditor({
             picture: 'https://liveblocks.io/avatars/avatar-1.png'
           }
         );
-        
+        console.log('Provider creado correctamente:', socketProvider);
         setLocalDoc(yDoc);
         setLocalProvider(socketProvider);
         
@@ -296,6 +306,7 @@ export function CollaborativeEditor({
         iniciarSesionColaborativa(documentId, roomName || 'Colaboración en Documento');
         
         return () => {
+            console.log('Limpiando provider y doc');
           socketProvider?.destroy();
           yDoc?.destroy();
         };
@@ -307,6 +318,7 @@ export function CollaborativeEditor({
 
   // Iniciar sesión colaborativa mediante API
   const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
+    console.log('Intentando iniciar sesión colaborativa:', id_room, tema);
     try {
       const response = await fetch('/api/iniciar-sesion-colaborativa', {
         method: 'POST',
@@ -314,6 +326,7 @@ export function CollaborativeEditor({
         body: JSON.stringify({ id_room, tema })
       });
       const data = await response.json();
+      console.log('Sesión colaborativa iniciada:', data);
       setSessionId(data.id_sesion_colaborativa);
     } catch (error) {
       console.error('Error al iniciar sesión colaborativa:', error);
@@ -374,13 +387,20 @@ export function CollaborativeEditor({
   // Esperar a que todo esté listo antes de renderizar el editor
   useEffect(() => {
     if (actualDoc && actualProvider) {
+        console.log('Doc y provider listos, configurando editor');
       setEditorReady(true);
     }
   }, [actualDoc, actualProvider]);
 
   if (!editorReady) {
+    console.log('Editor no listo, mostrando carga...');
     return <div className={styles.loading}>Cargando editor colaborativo...</div>;
   }
+  console.log('Renderizando TiptapEditor con:', {
+    docAvailable: !!actualDoc,
+    providerAvailable: !!actualProvider,
+    userName
+  });
   
   return (
     <TiptapEditor 
@@ -404,7 +424,14 @@ type EditorProps = {
 };
 
 function TiptapEditor({ doc, provider, userName, sessionId, queueInteraction, captureContent }: EditorProps) {
-  const userInfo = {
+    console.log('TiptapEditor iniciado con:', { 
+        docAvailable: !!doc, 
+        providerAvailable: !!provider,
+        userName, 
+        sessionId 
+      });
+    
+    const userInfo = {
     name: userName,
     color: '#' + Math.floor(Math.random()*16777215).toString(16),
     picture: 'https://liveblocks.io/avatars/avatar-1.png'
@@ -414,6 +441,7 @@ function TiptapEditor({ doc, provider, userName, sessionId, queueInteraction, ca
   useEffect(() => {
     if (provider && provider.awareness) {
       try {
+        console.log('Configurando awareness para:', userName);
         provider.awareness.setLocalStateField('user', userInfo);
       } catch (error) {
         console.error('Error al establecer estado local de awareness:', error);
@@ -442,6 +470,7 @@ function TiptapEditor({ doc, provider, userName, sessionId, queueInteraction, ca
         longitud: content.length,
         timestamp: Date.now()
       });
+      console.log('Editor actualizado, longitud del contenido:', content.length);
     },
     extensions: [
       StarterKit.configure({
@@ -459,12 +488,16 @@ function TiptapEditor({ doc, provider, userName, sessionId, queueInteraction, ca
 
   useEffect(() => {
     if (editor) {
+        console.log('TipTap editor inicializado correctamente');
       queueInteraction('usuario_unido', {
         id_usuario: userName,
         nombre_usuario: userName
       });
     }
     return () => {
+        if (editor) {
+            console.log('Limpiando TipTap editor');
+          }
       queueInteraction('usuario_salido', {
         id_usuario: userName,
         nombre_usuario: userName
