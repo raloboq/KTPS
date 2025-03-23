@@ -134,7 +134,7 @@ export class SocketIOProvider {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
-        transports: ['websocket', 'polling'], // Intentar ambos métodos de transporte
+        transports: ['polling'], // Intentar ambos métodos de transporte
         autoConnect: true
       });
 
