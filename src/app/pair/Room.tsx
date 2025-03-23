@@ -204,9 +204,10 @@ export function Room({ children }: { children: ReactNode }) {
             </RoomProvider>
   );
 }*/
-//esta es la nueva con socker
+//esta es la nueva con socketIO
 'use client';
-import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
+
+import React, { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loading } from '@/components/Loading';
 import styles from './pairPage.module.css';
