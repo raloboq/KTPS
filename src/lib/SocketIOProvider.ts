@@ -136,16 +136,18 @@ export class SocketIOProvider {
         timeout: 20000,
         transports: ['polling'], // Intentar ambos métodos de transporte
         autoConnect: true*/
-        transports: ['polling', 'websocket'], // Intentar primero polling, luego websocket
-  forceNew: true,
-  reconnection: true,
-  reconnectionDelay: 2000,
-  reconnectionDelayMax: 10000,
-  timeout: 20000,
+
+
+     transports: ['polling'], // Forzar SOLO polling, no intentar actualizar a WebSocket
+  upgrade: false,          // Impedir explícitamente el intento de actualización
   query: {
     roomId: documentId,
     userName: userName
-  }
+  },
+  reconnectionAttempts: this._maxReconnectAttempts,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000
       });
 
       console.log('Socket creado con opciones:', this.socket.io.opts);
