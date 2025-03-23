@@ -382,11 +382,25 @@ export default function ThinkPage() {
       await sendInteractions();
       queueInteraction('envío', { contenido_final: thought });
       await sendInteractions();
+
+        // Obtener los parámetros de la URL actual
+    const searchParams = new URLSearchParams(window.location.search);
+    const roomId = searchParams.get('roomId');
+    const roomName = searchParams.get('roomName');
+    
+    // Verificar que tenemos todos los parámetros necesarios
+    if (!alias || !roomId) {
+      console.error('Faltan parámetros necesarios para la redirección');
+      return;
+    }
       
       const encodedUserName = encodeURIComponent(alias);
       await guardarReflexion(sessionId, thought, encodedUserName);
+      const encodedRoomName = roomName ? encodeURIComponent(roomName) : '';
       
-      router.push(`/pair?alias=${encodedUserName}`);
+     // router.push(`/pair?alias=${encodedUserName}`);
+     router.push(`/pair?alias=${encodedUserName}&roomId=${roomId}${roomName ? `&roomName=${encodedRoomName}` : ''}`);
+
     } catch (error) {
       console.error('Error al enviar la reflexión:', error);
     }
