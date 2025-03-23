@@ -105,6 +105,8 @@ export class SocketIOProvider {
   private _reconnectAttempts = 0;
   private _maxReconnectAttempts = 5;
   private _callbacks = new Map<string, Set<Function>>();
+  private _pingInterval: NodeJS.Timeout | null = null; // Añadir esta propiedad
+  
 
   constructor(doc: Y.Doc, documentId: string, userName: string, userInfo: UserInfo) {
     this.doc = doc;
