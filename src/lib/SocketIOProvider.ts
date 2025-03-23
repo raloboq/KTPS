@@ -137,17 +137,18 @@ export class SocketIOProvider {
         transports: ['polling'], // Intentar ambos métodos de transporte
         autoConnect: true*/
 
-
-     transports: ['polling'], // Forzar SOLO polling, no intentar actualizar a WebSocket
-  upgrade: false,          // Impedir explícitamente el intento de actualización
-  query: {
-    roomId: documentId,
-    userName: userName
-  },
-  reconnectionAttempts: this._maxReconnectAttempts,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  timeout: 20000
+        transports: ['polling'],  // Usar SOLO polling
+        upgrade: false,           // No intentar actualizar a WebSocket
+        reconnection: true,
+        reconnectionDelay: 5000,
+        reconnectionAttempts: 100, // Intentar muchísimas veces
+        forceNew: true,           // Forzar una nueva conexión
+        timeout: 60000,           // Timeout de 60 segundos
+        query: {
+          roomId: documentId,
+          userName: userName
+        }
+     
       });
 
       console.log('Socket creado con opciones:', this.socket.io.opts);
@@ -174,6 +175,22 @@ export class SocketIOProvider {
     this._connected = true;
     this._reconnectAttempts = 0;
     this.socket.emit('join-document', this.documentId, this.userName);
+
+    // Unirse al documento
+  this.socket.emit('join-document', this.documentId, this.userName);
+  
+  // Programar un ping regular para mantener activa la conexión
+  if (this._pingInterval) {
+    clearInterval(this._pingInterval);
+  }
+  
+  this._pingInterval = setInterval(() => {
+    if (this._connected) {
+      console.log('Enviando ping para mantener conexión activa');
+      this.socket.emit('ping', { timestamp: Date.now() });
+    }
+  }, 20000); // Ping cada 20 segundos
+  
     this.emit('status', { connected: true });
   }
 

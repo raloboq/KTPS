@@ -325,6 +325,7 @@ export function Room({ children }: { children: ReactNode }) {
       console.error('Error al obtener la reflexión:', error);
     }
   };
+  
 
   useEffect(() => {
     if (loading) return;
