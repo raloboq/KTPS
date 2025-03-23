@@ -126,7 +126,7 @@ export class SocketIOProvider {
     try {
       // Mejorar opciones de Socket.io
       this.socket = io(socketUrl, {
-        query: {
+        /*query: {
           roomId: documentId,
           userName: userName
         },
@@ -135,7 +135,17 @@ export class SocketIOProvider {
         reconnectionDelayMax: 5000,
         timeout: 20000,
         transports: ['polling'], // Intentar ambos métodos de transporte
-        autoConnect: true
+        autoConnect: true*/
+        transports: ['polling', 'websocket'], // Intentar primero polling, luego websocket
+  forceNew: true,
+  reconnection: true,
+  reconnectionDelay: 2000,
+  reconnectionDelayMax: 10000,
+  timeout: 20000,
+  query: {
+    roomId: documentId,
+    userName: userName
+  }
       });
 
       console.log('Socket creado con opciones:', this.socket.io.opts);
