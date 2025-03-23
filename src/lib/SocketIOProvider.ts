@@ -482,6 +482,62 @@ export class SocketIOProvider {
     }
   }
 
+
+  private handleReconnection() {
+    console.log('Intentando reconexión manual...');
+    
+    // Si ya estamos conectados, no hacemos nada
+    if (this._connected) {
+      console.log('Ya estamos conectados, no es necesario reconectar');
+      return;
+    }
+    
+    // Si la conexión está cerrada, la volvemos a abrir
+    if (this.socket.disconnected) {
+      console.log('Socket desconectado, intentando conectar nuevamente');
+      this.socket.connect();
+    }
+    
+    // Establecer un timeout para verificar si la conexión tuvo éxito
+    setTimeout(() => {
+      if (!this._connected) {
+        console.log('Reconexión fallida, intentando una vez más...');
+        
+        // Intentar un enfoque más agresivo si todavía no estamos conectados
+        try {
+          // Destruir el socket actual
+          this.socket.disconnect();
+          
+          // Crear un nuevo socket con configuración simplificada
+          const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://localhost:3001';
+          this.socket = io(socketUrl, {
+            transports: ['polling'],
+            reconnection: false,
+            query: {
+              roomId: this.documentId,
+              userName: this.userName
+            }
+          });
+          
+          // Reinstalar todos los listeners
+          this.socket.on('connect', this.onConnect.bind(this));
+          this.socket.on('disconnect', this.onDisconnect.bind(this));
+          this.socket.on('connect_error', this.onConnectError.bind(this));
+          this.socket.on('sync-document', this.onSyncDocument.bind(this));
+          this.socket.on('sync-update', this.onUpdate.bind(this));
+          this.socket.on('cursor-update', this.onCursorUpdate.bind(this));
+          this.socket.on('user-joined', this.onUserJoined.bind(this));
+          this.socket.on('user-left', this.onUserLeft.bind(this));
+          
+          console.log('Socket recreado, intentando conectar nuevamente');
+        } catch (error) {
+          console.error('Error al recrear el socket:', error);
+          this.emit('error', { message: 'Error grave de conexión. Por favor recarga la página.' });
+        }
+      }
+    }, 3000);
+  }
+
   private onConnect() {
     console.log('🟢 Conectado al servidor Socket.io con ID:', this.socket.id);
     this._connected = true;
@@ -518,7 +574,7 @@ export class SocketIOProvider {
     this.emit('status', { connected: false, reason });
   }
 
-  private onConnectError(error: Error) {
+  /*private onConnectError(error: Error) {
     console.error('🔴 Error de conexión al servidor Socket.io:', error, {
       message: error.message,
       details: JSON.stringify(error)
@@ -529,7 +585,19 @@ export class SocketIOProvider {
       console.error('🔴 Número máximo de intentos de reconexión alcanzado');
       this.emit('error', { message: 'No se pudo conectar al servidor de colaboración' });
     }
-  }
+  }*/
+    private onConnectError(error: Error) {
+        console.error('🔴 Error de conexión al servidor Socket.io:', error, {
+          message: error.message,
+          details: JSON.stringify(error)
+        });
+        this._reconnectAttempts++;
+        
+        if (this._reconnectAttempts >= this._maxReconnectAttempts) {
+          console.error('🔴 Número máximo de intentos de reconexión alcanzado, intentando reconexión manual');
+          this.handleReconnection();
+        }
+      }
 
   private onSyncDocument(update: Uint8Array) {
     console.log('Recibido estado inicial del documento');
