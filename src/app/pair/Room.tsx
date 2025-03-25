@@ -452,7 +452,7 @@ import * as Y from 'yjs';
 const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
 
 export function Room({ children }: { children: ReactNode }) {
-  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+  const [timeRemaining, setTimeRemaining] = useState(30); // 15 minutos es 900
   const [showPopup, setShowPopup] = useState(false);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
