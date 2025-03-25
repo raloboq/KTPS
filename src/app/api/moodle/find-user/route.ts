@@ -157,7 +157,9 @@ export async function POST(request: Request) {
       }
       
       // Buscar estudiantes demo
-      const student = demoStudents.find(s => s.email === email);
+      const student = demoStudents.find(s => 
+        s.email === email || s.username === email
+      );
       
       if (!student) {
         return NextResponse.json(

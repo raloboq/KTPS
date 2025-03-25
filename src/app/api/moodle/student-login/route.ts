@@ -8,6 +8,11 @@ export async function POST(request: Request) {
   try {
     const { username, password, service, url } = await request.json();
 
+    // Para depuración - eliminar en producción
+    console.log('Modo demo activo:', IS_DEMO_MODE);
+    console.log('Intento de login con:', { username, password });
+    console.log('Estudiantes demo disponibles:', demoStudents.map(s => s.email));
+
     // Validar que los campos requeridos estén presentes
     if (!username || !password || !service || !url) {
       return NextResponse.json(
