@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       `, [studentId, activityId]);
       
       // Si ya está asignado, devolver esa asignación
-      if (existingAssignment.rowCount > 0) {
+      if (existingAssignment && existingAssignment.rowCount && existingAssignment.rowCount > 0) {
         await client.query('COMMIT');
         return NextResponse.json({
           success: true,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       
       let roomId, roomName;
       
-      if (availableRoom.rowCount > 0) {
+      if (availableRoom && availableRoom.rowCount && availableRoom.rowCount > 0) {
         // Unirse a sala existente
         roomId = availableRoom.rows[0].id;
         roomName = availableRoom.rows[0].room_name;
