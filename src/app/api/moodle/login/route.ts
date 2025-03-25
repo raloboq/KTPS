@@ -1,5 +1,8 @@
 // src/app/api/moodle/login/route.ts
 import { NextResponse } from 'next/server';
+import { IS_DEMO_MODE } from '@/utils/demoMode';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +15,27 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Si estamos en modo demo, devolver un token ficticio
+    if (IS_DEMO_MODE) {
+      console.log('Modo demo activado - Login con:', username);
+      
+      // En modo demo, aceptamos cualquier contraseña para usuarios demo
+      if (username === 'profesor_demo' || username.endsWith('@demo.com')) {
+        return NextResponse.json({
+          token: 'demo_token_123456',
+          privatetoken: 'demo_private_token_123456'
+        });
+      }
+
+      // Si llega aquí y sigue en modo demo, pero no es un usuario reconocido
+      return NextResponse.json(
+        { error: 'Credenciales incorrectas' },
+        { status: 401 }
+      );
+    }
+
+    // Si no estamos en modo demo, procedemos con la autenticación real
 
     // Construir la URL para la autenticación
     const loginUrl = new URL(url);

@@ -109,6 +109,9 @@ export default function LoginPage() {
             required
             placeholder="ejemplo@dominio.com"
           />
+          <p className={styles.helpText}>
+            En modo demo, use: profesor_demo@konradlorenz.edu.co
+          </p>
         </div>
 
         <div className={styles.inputGroup}>
@@ -121,6 +124,9 @@ export default function LoginPage() {
             className={styles.input}
             required
           />
+          <p className={styles.helpText}>
+            En modo demo, cualquier contraseña funciona
+          </p>
         </div>
 
         <button
