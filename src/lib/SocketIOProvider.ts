@@ -451,8 +451,10 @@ export class SocketIOProvider {
     try {
       // Configuración mejorada del socket
       this.socket = io(socketUrl, {
-        // Usar ambos mecanismos de transporte para mayor flexibilidad
-        transports: ['polling', 'websocket'],
+        // Usar sólo polling ya que WebSocket está fallando
+        transports: ['polling'],
+        // Deshabilitar explícitamente el upgrade a WebSocket
+        upgrade: false,
         // Usar valores de timeout más razonables
         reconnection: true,
         reconnectionAttempts: 10,
