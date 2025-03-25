@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import styles from './pairPage.module.css';
 
 export default function PairContent() {
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutos
+  const [timeRemaining, setTimeRemaining] = useState(30); // 20 minutos son 1200
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
