@@ -3,10 +3,33 @@
 import { useState, useEffect } from 'react';
 import { getConfigurationStats } from '@/services/tps-config.service';
 import styles from '@/app/admin/adminPage.module.css';
+import { useRouter } from 'next/navigation';
 
 interface StatsPanelProps {
   configId: number;
   onBack: () => void;
+}
+
+interface PhaseStats {
+  think: {
+    averageLength: number;
+    participationRate: number;
+    mostCommonTopic: string;
+  };
+  pair: {
+    averageCollaborationTime: number;
+    messageCount: number;
+    documentChanges: number;
+  };
+  share: {
+    presentationLength: number;
+    feedbackCount: number;
+  };
+}
+
+interface TimeDistribution {
+  phase: string;
+  percentage: number;
 }
 
 interface StatsData {
@@ -16,22 +39,30 @@ interface StatsData {
   avgPairTime: number;
   avgShareTime: number;
   completionRate: number;
-  // Puedes añadir más métricas según necesites
+  phaseStats?: PhaseStats;
+  timeDistribution?: TimeDistribution[];
 }
 
 export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const loadStats = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
+        console.log('Cargando estadísticas para configuración ID:', configId);
         const response = await getConfigurationStats(configId);
+        console.log('Respuesta de estadísticas:', response);
+        
         if (response.success && response.data) {
           setStats(response.data);
         } else {
+          console.error('Error en respuesta de estadísticas:', response.error);
           setError(response.error || 'Error al cargar estadísticas');
         }
       } catch (error) {
@@ -45,20 +76,34 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
     loadStats();
   }, [configId]);
 
-  // Para demostración, usemos datos ficticios si no hay datos reales
-  useEffect(() => {
-    if (!loading && !stats && !error) {
-      // Datos de ejemplo para visualización
-      setStats({
-        totalSessions: 12,
-        totalStudents: 24,
-        avgThinkTime: 13.5, // minutos
-        avgPairTime: 18.2, // minutos
-        avgShareTime: 8.7, // minutos
-        completionRate: 0.875 // 87.5%
-      });
+  const handleRetry = () => {
+    setStats(null);
+    loadStats();
+  };
+
+  const loadStats = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await getConfigurationStats(configId);
+      if (response.success && response.data) {
+        setStats(response.data);
+      } else {
+        setError(response.error || 'Error al cargar estadísticas');
+      }
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error);
+      setError('Error de conexión al cargar estadísticas');
+    } finally {
+      setLoading(false);
     }
-  }, [loading, stats, error]);
+  };
+
+  const handleExportData = () => {
+    // En una implementación real, esto descargaría un archivo CSV
+    alert('Funcionalidad de exportación de datos en desarrollo');
+  };
 
   if (loading) {
     return <div className={styles.loading}>Cargando estadísticas...</div>;
@@ -70,7 +115,13 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
 
       {error && (
         <div className={`${styles.message} ${styles.error}`}>
-          {error}
+          <p>{error}</p>
+          <button 
+            onClick={handleRetry}
+            className={styles.retryButton}
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
@@ -127,13 +178,72 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
             </div>
           </div>
 
+          {stats.phaseStats && (
+            <div className={styles.statsSection}>
+              <h3 className={styles.statsSectionTitle}>Datos por Fase</h3>
+              
+              <div className={styles.phaseStatsGrid}>
+                <div className={styles.phaseStatCard}>
+                  <h4>Fase Think</h4>
+                  <p><strong>Longitud promedio:</strong> {stats.phaseStats.think.averageLength} caracteres</p>
+                  <p><strong>Tasa de participación:</strong> {(stats.phaseStats.think.participationRate * 100).toFixed(1)}%</p>
+                  <p><strong>Tema más común:</strong> {stats.phaseStats.think.mostCommonTopic}</p>
+                </div>
+                
+                <div className={styles.phaseStatCard}>
+                  <h4>Fase Pair</h4>
+                  <p><strong>Tiempo de colaboración:</strong> {stats.phaseStats.pair.averageCollaborationTime.toFixed(1)} min</p>
+                  <p><strong>Mensajes promedio:</strong> {stats.phaseStats.pair.messageCount}</p>
+                  <p><strong>Cambios en documentos:</strong> {stats.phaseStats.pair.documentChanges}</p>
+                </div>
+                
+                <div className={styles.phaseStatCard}>
+                  <h4>Fase Share</h4>
+                  <p><strong>Longitud de presentación:</strong> {stats.phaseStats.share.presentationLength} caracteres</p>
+                  <p><strong>Retroalimentaciones:</strong> {stats.phaseStats.share.feedbackCount}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {stats.timeDistribution && (
+            <div className={styles.statsSection}>
+              <h3 className={styles.statsSectionTitle}>Distribución del Tiempo</h3>
+              
+              <div className={styles.timeDistribution}>
+                {stats.timeDistribution.map((item, index) => (
+                  <div key={index} className={styles.timeDistItem}>
+                    <div className={styles.timeDistLabel}>
+                      {item.phase}
+                    </div>
+                    <div className={styles.timeDistBar}>
+                      <div 
+                        className={styles.timeDistFill}
+                        style={{ 
+                          width: `${item.percentage}%`,
+                          backgroundColor: 
+                            item.phase === 'Think' ? '#009A93' : 
+                            item.phase === 'Pair' ? '#E6007E' : 
+                            '#662483'
+                        }}
+                      ></div>
+                    </div>
+                    <div className={styles.timeDistPercentage}>
+                      {item.percentage}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className={styles.statsSectionNote}>
-            <p>Nota: Para obtener estadísticas más detalladas, puede descargar los datos en formato CSV.</p>
+            <p>Nota: Estas estadísticas son generadas en base a las sesiones completadas de la actividad.</p>
           </div>
 
           <div className={styles.statsActions}>
             <button 
-              onClick={() => alert('Función de exportación aún no implementada')} 
+              onClick={handleExportData} 
               className={styles.exportButton}
             >
               Exportar Datos (CSV)

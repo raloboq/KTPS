@@ -1,4 +1,5 @@
 // src/services/tps-config.service.ts
+
 import { TPSConfiguration, TPSConfigFormData, APIResponse, TPSConfigurationWithDetails } from '@/types/models';
 
 /**
@@ -207,6 +208,7 @@ export async function generateAccessLink(configId: number): Promise<APIResponse<
  */
 export async function getConfigurationStats(configId: number): Promise<APIResponse<any>> {
   try {
+    console.log(`Solicitando estadísticas para config ID: ${configId}`);
     const response = await fetch(`/api/tps-config/${configId}/stats`, {
       method: 'GET',
       headers: {
@@ -214,13 +216,30 @@ export async function getConfigurationStats(configId: number): Promise<APIRespon
       },
     });
 
+    if (!response.ok) {
+      // Manejo específico del error según el código de estado
+      if (response.status === 404) {
+        return { 
+          success: false, 
+          error: 'No se encontraron estadísticas para esta configuración.' 
+        };
+      } else {
+        const errorText = await response.text();
+        console.error(`Error (${response.status}): ${errorText}`);
+        return { 
+          success: false, 
+          error: `Error del servidor (${response.status}). Por favor, intente nuevamente.` 
+        };
+      }
+    }
+
     const data = await response.json();
     return data;
   } catch (error) {
     console.error(`Error fetching stats for configuration ID ${configId}:`, error);
     return { 
       success: false, 
-      error: 'Error al obtener estadísticas.' 
+      error: 'Error de conexión al obtener estadísticas. Por favor, verifique su conexión e intente nuevamente.' 
     };
   }
 }
