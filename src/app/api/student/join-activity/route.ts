@@ -13,6 +13,41 @@ export async function POST(request: Request) {
     const studentIdStr = cookieStore.get('studentId')?.value;
     const studentName = cookieStore.get('studentFullName')?.value;
     
+    // Logs para depuración
+    console.log('Unirse a actividad:');
+    console.log('- Modo demo:', IS_DEMO_MODE);
+    console.log('- studentId cookie:', studentIdStr);
+    console.log('- studentFullName cookie:', studentName);
+    
+    // En modo demo, permitir acceso incluso sin autenticación completa
+    if (IS_DEMO_MODE) {
+      // Obtener el activityId de la solicitud
+      const requestData = await request.json();
+      const activityId = requestData.activityId;
+      
+      console.log('- activityId solicitado:', activityId);
+      
+      if (!activityId) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'ID de actividad no proporcionado'
+        }, { status: 400 });
+      }
+      
+      // Crear un ID de estudiante si no existe
+      let studentId = 1001;
+      if (studentIdStr) {
+        studentId = parseInt(studentIdStr);
+      }
+      
+      // Usar la función demo para asignar sala
+      const demoResult = assignStudentToRoomDemo(studentId, activityId);
+      console.log('Resultado asignación demo:', demoResult);
+      
+      return NextResponse.json(demoResult);
+    }
+    
+    // Verificación de autenticación para modo no-demo
     if (!studentIdStr || !studentName) {
       return NextResponse.json({ 
         success: false, 
@@ -32,12 +67,6 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Si estamos en modo demo, usar la asignación de salas en memoria
-    if (IS_DEMO_MODE) {
-      const result = assignStudentToRoomDemo(studentId, activityId);
-      return NextResponse.json(result);
-    }
-    
     // Si no estamos en modo demo, usar la base de datos real
     const client = await pool.connect();
     

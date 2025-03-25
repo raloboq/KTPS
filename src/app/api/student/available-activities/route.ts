@@ -1,4 +1,5 @@
 // src/app/api/student/available-activities/route.ts
+// src/app/api/student/available-activities/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
@@ -13,8 +14,24 @@ export async function GET() {
     const studentIdStr = cookieStore.get('studentId')?.value;
     const token = cookieStore.get('studentMoodleToken')?.value;
     
-    // Verificar autenticación
+    // Logs para depuración
+    console.log('Obtener actividades disponibles:');
+    console.log('- Modo demo:', IS_DEMO_MODE);
+    console.log('- studentId cookie:', studentIdStr);
+    console.log('- token cookie:', token ? 'Presente' : 'Ausente');
+    
+    // En modo demo, siempre permitir acceso incluso sin token
+    if (IS_DEMO_MODE) {
+      console.log('Devolviendo actividades en modo demo');
+      return NextResponse.json({
+        success: true,
+        activities: demoActivities
+      });
+    }
+    
+    // En modo no-demo, verificar autenticación
     if (!token || !studentIdStr) {
+      console.log('Usuario no autenticado - faltan cookies necesarias');
       return NextResponse.json({ 
         success: false, 
         error: 'Usuario no autenticado' 
@@ -22,15 +39,6 @@ export async function GET() {
     }
     
     const studentId = parseInt(studentIdStr);
-    
-    // Si estamos en modo demo, devolver datos de demostración
-    if (IS_DEMO_MODE) {
-      // En modo demo, devolvemos las actividades disponibles predefinidas
-      return NextResponse.json({
-        success: true,
-        activities: demoActivities
-      });
-    }
     
     // Si no estamos en modo demo, consultar la base de datos real
     const result = await pool.query(`
@@ -54,8 +62,6 @@ export async function GET() {
       WHERE 
         aa.is_active = TRUE
         AND CURRENT_TIMESTAMP BETWEEN aa.start_date AND aa.end_date
-        -- Podríamos añadir restricciones adicionales aquí, como verificar
-        -- matrícula del estudiante en el curso, etc.
       ORDER BY 
         aa.end_date ASC
     `);
@@ -72,6 +78,3 @@ export async function GET() {
     }, { status: 500 });
   }
 }
-
-
-

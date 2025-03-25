@@ -21,19 +21,46 @@ export default function ActivitySelectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const router = useRouter();
   const studentName = Cookies.get('studentFullName') || 'Estudiante';
+
+  // Verificar si estamos en modo demo
+  useEffect(() => {
+    const checkDemoMode = async () => {
+      try {
+        const response = await fetch('/api/demo-check');
+        if (response.ok) {
+          const data = await response.json();
+          setIsDemoMode(data.isDemoMode);
+        }
+      } catch (error) {
+        console.error('Error al verificar modo demo:', error);
+      }
+    };
+
+    checkDemoMode();
+  }, []);
 
   // Cargar actividades disponibles
   useEffect(() => {
     const fetchActivities = async () => {
       try {
+        console.log('Cargando actividades disponibles...');
         const response = await fetch('/api/student/available-activities');
+        
+        // Log detallado para depuración
+        console.log('Status:', response.status);
+        console.log('OK:', response.ok);
+        
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error respuesta:', errorText);
           throw new Error('Error al cargar actividades');
         }
         
         const data = await response.json();
+        console.log('Datos recibidos:', data);
         
         if (data.success) {
           setActivities(data.activities || []);
@@ -61,6 +88,19 @@ export default function ActivitySelectPage() {
     setError(null);
 
     try {
+      // En modo demo, simplificar el proceso
+      if (isDemoMode) {
+        // Simular una respuesta exitosa
+        Cookies.set('roomId', '501', { secure: true, sameSite: 'strict' });
+        Cookies.set('roomName', 'Demo-Room-001', { secure: true, sameSite: 'strict' });
+        Cookies.set('activityId', selectedActivityId.toString(), { secure: true, sameSite: 'strict' });
+        
+        // Redirigir al estudiante a la fase de Think
+        router.push('/think');
+        return;
+      }
+
+      // Proceso normal para ambiente no-demo
       const response = await fetch('/api/student/join-activity', {
         method: 'POST',
         headers: {
@@ -129,6 +169,13 @@ export default function ActivitySelectPage() {
           className={styles.logo}
         />
       </div>
+
+      {isDemoMode && (
+        <div className={styles.demoInfoBox}>
+          <h3>Modo Demostración Activo</h3>
+          <p>Estás en modo demostración. Las actividades mostradas son ejemplos para pruebas.</p>
+        </div>
+      )}
 
       {error && (
         <div className={styles.errorMessage}>
