@@ -251,7 +251,7 @@ const PAUSE_THRESHOLD = 3000;
 
 export default function ThinkPage() {
   const [thought, setThought] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+  const [timeRemaining, setTimeRemaining] = useState(30); // 15 minutos es 900
   const [alias, setAlias] = useState('');
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomName, setRoomName] = useState<string | null>(null);
