@@ -34,6 +34,57 @@ export const demoStudents = [
   }
 ];
 
+// Datos de muestra de cursos
+export const sampleCourses = [
+  {
+    id: 101,
+    name: "Fundamentos de Programación",
+    shortname: "FundProg"
+  },
+  {
+    id: 102,
+    name: "Diseño de Algoritmos",
+    shortname: "DiAlg"
+  },
+  {
+    id: 103,
+    name: "Pensamiento Crítico",
+    shortname: "PenCrit"
+  }
+];
+
+// Datos de muestra de asignaciones
+export const sampleAssignments = [
+  {
+    id: 201,
+    course_id: 101,
+    name: "Introducción a la Programación",
+    description: "Actividad sobre conceptos básicos de programación",
+    duedate: Math.floor(Date.now() / 1000) + 604800 // Una semana en el futuro
+  },
+  {
+    id: 202,
+    course_id: 101,
+    name: "Estructuras de Control",
+    description: "Ejercicios sobre condicionales y bucles",
+    duedate: Math.floor(Date.now() / 1000) + 1209600 // Dos semanas en el futuro
+  },
+  {
+    id: 203,
+    course_id: 102,
+    name: "Análisis de Complejidad",
+    description: "Evaluación de la eficiencia de algoritmos",
+    duedate: Math.floor(Date.now() / 1000) + 864000 // 10 días en el futuro
+  },
+  {
+    id: 204,
+    course_id: 103,
+    name: "Evaluación de Argumentos",
+    description: "Actividad para analizar y evaluar argumentos",
+    duedate: Math.floor(Date.now() / 1000) + 432000 // 5 días en el futuro
+  }
+];
+
 // Datos de muestra de actividades disponibles
 export const demoActivities = [
   {

@@ -1,7 +1,10 @@
 // src/app/api/moodle/get-courses/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { IS_DEMO_MODE, sampleCourses } from '@/utils/demoMode';
+
 export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Obtener el token de las cookies de la solicitud
@@ -15,6 +18,26 @@ export async function GET() {
       );
     }
 
+    // Si estamos en modo demo, devolver cursos de muestra
+    if (IS_DEMO_MODE) {
+      return NextResponse.json({ 
+        courses: sampleCourses || [
+          {
+            id: 101,
+            name: "Curso de Demostración 1",
+            shortname: "Demo1"
+          },
+          {
+            id: 102,
+            name: "Curso de Demostración 2",
+            shortname: "Demo2"
+          }
+        ] 
+      });
+    }
+
+    // En modo real, continuar con la obtención de cursos de Moodle
+    
     // Obtener el ID de usuario del profesor
     const userId = await getUserId(token);
     
