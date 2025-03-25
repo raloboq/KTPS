@@ -20,20 +20,29 @@ export async function GET() {
 
     // Si estamos en modo demo, devolver cursos de muestra
     if (IS_DEMO_MODE) {
-      return NextResponse.json({ 
-        courses: sampleCourses || [
-          {
-            id: 101,
-            name: "Curso de Demostración 1",
-            shortname: "Demo1"
-          },
-          {
-            id: 102,
-            name: "Curso de Demostración 2",
-            shortname: "Demo2"
-          }
-        ] 
-      });
+      // Convertir a la estructura exacta que espera el componente CourseSelectPage
+      const demoCourses = sampleCourses.map(course => ({
+        id: course.id,
+        fullname: course.name,
+        shortname: course.shortname || `Demo${course.id}`,
+        displayname: course.name
+      })) || [
+        {
+          id: 101,
+          fullname: "Curso de Demostración 1",
+          shortname: "Demo1",
+          displayname: "Curso de Demostración 1"
+        },
+        {
+          id: 102,
+          fullname: "Curso de Demostración 2",
+          shortname: "Demo2",
+          displayname: "Curso de Demostración 2"
+        }
+      ];
+      
+      console.log('Devolviendo cursos de demostración:', demoCourses);
+      return NextResponse.json({ courses: demoCourses });
     }
 
     // En modo real, continuar con la obtención de cursos de Moodle

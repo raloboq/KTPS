@@ -1,6 +1,8 @@
 // src/app/api/moodle/get-assignments/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { IS_DEMO_MODE, sampleAssignments } from '@/utils/demoMode';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -25,6 +27,49 @@ export async function GET(request: Request) {
         { error: 'Se requiere el ID del curso' },
         { status: 400 }
       );
+    }
+
+    // Si estamos en modo demo, devolver asignaciones de muestra
+    if (IS_DEMO_MODE) {
+      // Filtrar las asignaciones por el curso seleccionado
+      const courseAssignments = sampleAssignments 
+        ? sampleAssignments.filter(assignment => assignment.course_id === parseInt(courseId))
+        : [
+            {
+              id: 201,
+              name: "Asignación de Demostración 1",
+              cmid: 301,
+              course: parseInt(courseId),
+              duedate: new Date().getTime() / 1000 + 604800 // Una semana en el futuro
+            },
+            {
+              id: 202,
+              name: "Asignación de Demostración 2",
+              cmid: 302,
+              course: parseInt(courseId),
+              duedate: new Date().getTime() / 1000 + 1209600 // Dos semanas en el futuro
+            }
+          ];
+      
+      // Agregar logs para depuración
+      console.log('CourseId recibido:', courseId);
+      console.log('Asignaciones filtradas para el curso:', courseAssignments);
+      
+      // Estructura exacta que espera el componente
+      const result = {
+        courses: [{
+          id: parseInt(courseId),
+          assignments: courseAssignments.map(a => ({
+            id: a.id,
+            name: a.name,
+            cmid: a.id + 100,  // Simulamos un cmid
+            duedate: a.duedate || (new Date().getTime() / 1000 + 604800)
+          }))
+        }]
+      };
+      
+      console.log('Respuesta final de asignaciones:', JSON.stringify(result));
+      return NextResponse.json(result);
     }
 
     // Obtener las actividades del curso
