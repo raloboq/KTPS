@@ -125,6 +125,7 @@ async function saveUserToLocalDB(user: any) {
 // Marcar la ruta como dinámica para evitar errores de pre-renderizado
 export const dynamic = 'force-dynamic';
 */
+// src/app/api/moodle/find-user/route.ts
 import { NextResponse } from 'next/server';
 import { IS_DEMO_MODE, demoStudents } from '@/utils/demoMode';
 
@@ -134,6 +135,11 @@ export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
+    // Logs para depuración
+    console.log('Búsqueda de usuario:');
+    console.log('- Modo demo activo:', IS_DEMO_MODE);
+    console.log('- Buscando email:', email);
+
     // Validar que el email esté presente
     if (!email) {
       return NextResponse.json(
@@ -142,43 +148,54 @@ export async function POST(request: Request) {
       );
     }
 
-    // Si estamos en modo demo, buscar en datos de muestra
+    // Si estamos en modo demo, buscar en datos de muestra con lógica flexible
     if (IS_DEMO_MODE) {
-      // Para profesores en modo demo, aceptar cualquier correo que termine en @demo.com
-      if (email.endsWith('@demo.com') || email === 'profesor_demo@konradlorenz.edu.co') {
+      console.log('Usando búsqueda en modo demo');
+      
+      // Para emails terminados en @demo.com, creamos un usuario demo al vuelo
+      if (email.endsWith('@demo.com')) {
+        // Extraer nombre de usuario del email
+        const username = email.split('@')[0];
+        const studentId = Math.floor(Math.random() * 1000) + 1000;
+        
+        console.log('Creando usuario demo al vuelo:', username);
+        
         return NextResponse.json({
-          id: 999,
-          username: "profesor_demo",
-          firstname: "Profesor",
-          lastname: "Demostración",
-          fullname: "Profesor Demostración",
-          email: "profesor_demo@konradlorenz.edu.co",
+          id: studentId,
+          username: username,
+          firstname: "Estudiante",
+          lastname: "Demo",
+          fullname: "Estudiante Demo",
+          email: email,
         });
       }
       
-      // Buscar estudiantes demo
+      // Buscar en estudiantes demo predefinidos
       const student = demoStudents.find(s => 
         s.email === email || s.username === email
       );
       
-      if (!student) {
-        return NextResponse.json(
-          { error: 'No se encontró ningún usuario con ese correo electrónico' },
-          { status: 404 }
-        );
+      if (student) {
+        console.log('Usuario demo encontrado:', student.username);
+        
+        return NextResponse.json({
+          id: student.id,
+          username: student.username,
+          firstname: student.fullname.split(' ')[0],
+          lastname: student.fullname.split(' ').slice(1).join(' '),
+          fullname: student.fullname,
+          email: student.email,
+        });
       }
       
-      return NextResponse.json({
-        id: student.id,
-        username: student.username,
-        firstname: student.fullname.split(' ')[0],
-        lastname: student.fullname.split(' ').slice(1).join(' '),
-        fullname: student.fullname,
-        email: student.email,
-      });
+      console.log('Usuario demo no encontrado para:', email);
+      return NextResponse.json(
+        { error: 'No se encontró ningún usuario con ese correo electrónico. En modo demo, use un email que termine en @demo.com o uno de los usuarios predefinidos' },
+        { status: 404 }
+      );
     }
 
-    // Si no estamos en modo demo, continuar con el código original
+    // Código original para modo producción
     // Token para este webservice específico (debe ser configurado en las variables de entorno)
     const wsToken = process.env.MOODLE_WS_TOKEN;
     
@@ -229,7 +246,7 @@ export async function POST(request: Request) {
     
     // Devolver los datos relevantes del usuario
     return NextResponse.json({
-      id: user.id, // Importante: Este es el ID de usuario en Moodle
+      id: user.id, 
       username: user.username,
       firstname: user.firstname,
       lastname: user.lastname,

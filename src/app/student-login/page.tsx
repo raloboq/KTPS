@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
@@ -11,7 +11,25 @@ export default function StudentLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const router = useRouter();
+
+  // Verificar si estamos en modo demo
+  useEffect(() => {
+    const checkDemoMode = async () => {
+      try {
+        const response = await fetch('/api/demo-check');
+        if (response.ok) {
+          const data = await response.json();
+          setIsDemoMode(data.isDemoMode);
+        }
+      } catch (error) {
+        console.error('Error al verificar modo demo:', error);
+      }
+    };
+
+    checkDemoMode();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,7 +62,7 @@ export default function StudentLoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: userData.username,
+          username: userData.username || email,
           password,
           service: 'moodle_mobile_app',
           url: tokenUrl
@@ -62,9 +80,9 @@ export default function StudentLoginPage() {
         Cookies.set('studentMoodleToken', loginData.token, { secure: true, sameSite: 'strict' });
         
         // Guardar el username y email para identificar al estudiante
-        Cookies.set('studentUsername', userData.username, { secure: true, sameSite: 'strict' });
+        Cookies.set('studentUsername', userData.username || email.split('@')[0], { secure: true, sameSite: 'strict' });
         Cookies.set('studentEmail', email, { secure: true, sameSite: 'strict' });
-        Cookies.set('studentFullName', userData.fullname || `${userData.firstname} ${userData.lastname}`, { secure: true, sameSite: 'strict' });
+        Cookies.set('studentFullName', userData.fullname || `Estudiante Demo`, { secure: true, sameSite: 'strict' });
         Cookies.set('studentId', userData.id.toString(), { secure: true, sameSite: 'strict' });
         
         // Redirigir a la página de selección de actividad
@@ -100,6 +118,18 @@ export default function StudentLoginPage() {
         </div>
       )}
 
+      {isDemoMode && (
+        <div className={styles.demoInfoBox}>
+          <h3>Modo Demostración Activo</h3>
+          <p>Para iniciar sesión, puedes usar:</p>
+          <ul>
+            <li><strong>Email:</strong> estudiante1@demo.com</li>
+            <li><strong>Contraseña:</strong> password123</li>
+          </ul>
+          <p className={styles.demoNote}>En modo demo, cualquier email que termine en @demo.com será aceptado.</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.inputGroup}>
           <label htmlFor="email">Correo electrónico:</label>
@@ -110,7 +140,7 @@ export default function StudentLoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
             required
-            placeholder="tu.correo@konradlorenz.edu.co"
+            placeholder={isDemoMode ? "estudiante1@demo.com" : "tu.correo@konradlorenz.edu.co"}
           />
         </div>
 
@@ -123,6 +153,7 @@ export default function StudentLoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
             required
+            placeholder={isDemoMode ? "password123" : "••••••••"}
           />
         </div>
 
