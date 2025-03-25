@@ -83,10 +83,10 @@ export default function ActivitySelectPage() {
       setError('Por favor, seleccione una actividad');
       return;
     }
-
+  
     setJoining(true);
     setError(null);
-
+  
     try {
       // En modo demo, simplificar el proceso
       if (isDemoMode) {
@@ -99,7 +99,7 @@ export default function ActivitySelectPage() {
         router.push('/think');
         return;
       }
-
+  
       // Proceso normal para ambiente no-demo
       const response = await fetch('/api/student/join-activity', {
         method: 'POST',
@@ -110,16 +110,16 @@ export default function ActivitySelectPage() {
           activityId: selectedActivityId
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (data.success) {
         // Guardar información de la sala asignada
         Cookies.set('roomId', data.roomId.toString(), { secure: true, sameSite: 'strict' });
         Cookies.set('roomName', data.roomName, { secure: true, sameSite: 'strict' });
         Cookies.set('activityId', selectedActivityId.toString(), { secure: true, sameSite: 'strict' });
-
-        // Redirigir al estudiante a la fase de Think
+  
+        // Redirigir al estudiante a la fase de Think - SIN PARÁMETROS URL
         router.push('/think');
       } else {
         setError(data.error || 'Error al unirse a la actividad');

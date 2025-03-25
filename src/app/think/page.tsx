@@ -238,6 +238,7 @@ export default function ThinkPage() {
   
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import styles from './thinkPage.module.css';
 import { iniciarSesion } from '../api/sesiones';
 import { registrarInteraccion } from '../api/interacciones';
@@ -250,7 +251,7 @@ const PAUSE_THRESHOLD = 3000;
 
 export default function ThinkPage() {
   const [thought, setThought] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
   const [alias, setAlias] = useState('');
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomName, setRoomName] = useState<string | null>(null);
@@ -293,22 +294,28 @@ export default function ThinkPage() {
   }, [sendInteractions]);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const aliasParam = searchParams.get('alias');
-    const roomIdParam = searchParams.get('roomId');
-    const roomNameParam = searchParams.get('roomName');
+    // Obtener datos de las cookies
+    const studentUsername = Cookies.get('studentUsername');
+    const roomIdFromCookie = Cookies.get('roomId');
+    const roomNameFromCookie = Cookies.get('roomName');
     
-    if (aliasParam) {
-      setAlias(aliasParam);
-      handleIniciarSesion(aliasParam);
+    if (studentUsername) {
+      setAlias(studentUsername);
+      handleIniciarSesion(studentUsername);
+    } else {
+      console.error('No se encontró nombre de usuario en las cookies');
     }
     
-    if (roomIdParam) {
-      setRoomId(roomIdParam);
+    if (roomIdFromCookie) {
+      setRoomId(roomIdFromCookie);
+    } else {
+      console.error('No se encontró ID de sala en las cookies');
     }
     
-    if (roomNameParam) {
-      setRoomName(roomNameParam);
+    if (roomNameFromCookie) {
+      setRoomName(roomNameFromCookie);
+    } else {
+      console.error('No se encontró nombre de sala en las cookies');
     }
 
     const timer = setInterval(() => {
@@ -427,7 +434,7 @@ export default function ThinkPage() {
       await sendInteractions();
       
       // Guardamos la reflexión si tenemos sessionId
-      if (sessionId) {
+      if (sessionId && alias) {
         try {
           await guardarReflexion(sessionId, thought, alias);
           console.log('Reflexión guardada exitosamente');
@@ -437,31 +444,12 @@ export default function ThinkPage() {
       } else if (IS_DEMO_MODE) {
         console.log('Modo demo: Simulando guardado de reflexión');
       } else {
-        console.error('No se pudo guardar la reflexión: sessionId es null');
+        console.error('No se pudo guardar la reflexión: sessionId o alias es null');
       }
       
-      // Construir URL de redirección a la página pair
-      let redirectUrl = '/pair';
-      const queryParams = [];
-      
-      if (alias) {
-        queryParams.push(`alias=${encodeURIComponent(alias)}`);
-      }
-      
-      if (roomId) {
-        queryParams.push(`roomId=${encodeURIComponent(roomId)}`);
-      }
-      
-      if (roomName) {
-        queryParams.push(`roomName=${encodeURIComponent(roomName)}`);
-      }
-      
-      if (queryParams.length > 0) {
-        redirectUrl += `?${queryParams.join('&')}`;
-      }
-      
-      console.log('Redirigiendo a:', redirectUrl);
-      router.push(redirectUrl);
+      // Redirección simple sin parámetros en la URL
+      console.log('Redirigiendo a pair');
+      router.push('/pair');
     } catch (error) {
       console.error('Error en el proceso de submit:', error);
       isRedirectingRef.current = false; // Permitir reintentar si hay error
