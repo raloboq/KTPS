@@ -144,6 +144,19 @@ export async function POST(request: Request) {
 
     // Si estamos en modo demo, buscar en datos de muestra
     if (IS_DEMO_MODE) {
+      // Para profesores en modo demo, aceptar cualquier correo que termine en @demo.com
+      if (email.endsWith('@demo.com') || email === 'profesor_demo@konradlorenz.edu.co') {
+        return NextResponse.json({
+          id: 999,
+          username: "profesor_demo",
+          firstname: "Profesor",
+          lastname: "Demostración",
+          fullname: "Profesor Demostración",
+          email: "profesor_demo@konradlorenz.edu.co",
+        });
+      }
+      
+      // Buscar estudiantes demo
       const student = demoStudents.find(s => s.email === email);
       
       if (!student) {
