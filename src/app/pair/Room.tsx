@@ -477,15 +477,26 @@ export function Room({ children }: { children: ReactNode }) {
           body: JSON.stringify({ id_sesion_colaborativa: sessionId })
         });
         console.log('Sesión colaborativa finalizada');
+        
+        // Mostrar popup de agradecimiento
         setShowPopup(true);
+        
+        // Después de mostrar el popup por unos segundos, redirigir a la fase Share
+        setTimeout(() => {
+          router.push('/share');
+        }, 3000);
       } catch (error) {
         console.error('Error al finalizar sesión colaborativa:', error);
       }
     }
     else {
       console.error('No se pudo finalizar sesión colaborativa. sessionId no existe');
+      // Aun así, intentar redirigir a la fase Share
+      setTimeout(() => {
+        router.push('/share');
+      }, 3000);
     }
-  }, [sessionId]);
+  }, [sessionId, router]);
 
   useEffect(() => {
     // Obtener datos de las cookies

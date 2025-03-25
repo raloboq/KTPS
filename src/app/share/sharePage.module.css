@@ -1,0 +1,342 @@
+/* src/app/share/sharePage.module.css */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+  }
+  
+  .title {
+    color: #4A4A49;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 24px;
+  }
+  
+  .timer {
+    text-align: center;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #009A93;
+    font-weight: bold;
+    position: relative;
+    padding: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 0 auto 20px;
+    width: 200px;
+  }
+  
+  .instructionsContainer {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 5px solid #662483;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .subtitle {
+    color: #662483;
+    margin-bottom: 10px;
+    font-size: 20px;
+  }
+  
+  .tabsContainer {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tabButton {
+    padding: 12px 25px;
+    font-size: 16px;
+    background-color: #f0f0f0;
+    border: none;
+    cursor: pointer;
+    flex: 1;
+    transition: background-color 0.3s;
+    font-weight: 500;
+    color: #4A4A49;
+    border-bottom: 3px solid transparent;
+  }
+  
+  .tabButton:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .activeTab {
+    background-color: #ffffff;
+    border-bottom: 3px solid #E6007E;
+    color: #E6007E;
+    font-weight: bold;
+  }
+  
+  .contentContainer {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  
+  .contentTitle {
+    color: #009A93;
+    margin-bottom: 20px;
+    font-size: 18px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 10px;
+  }
+  
+  .cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+  }
+  
+  .card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .cardHeader {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .cardTitle {
+    color: #662483;
+    margin: 0;
+    font-size: 16px;
+  }
+  
+  .cardParticipants {
+    color: #4A4A49;
+    font-size: 14px;
+    margin: 5px 0;
+  }
+  
+  .cardTimestamp {
+    color: #666;
+    font-size: 12px;
+    margin: 5px 0 0 0;
+  }
+  
+  .cardContent {
+    margin-bottom: 15px;
+    flex-grow: 1;
+    line-height: 1.5;
+    color: #333;
+  }
+  
+  .formattedContent p {
+    margin-bottom: 10px;
+  }
+  
+  .readMoreButton, 
+  .readLessButton {
+    background: none;
+    border: none;
+    color: #E6007E;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 5px;
+    text-decoration: underline;
+  }
+  
+  .readMoreButton:hover, 
+  .readLessButton:hover {
+    color: #662483;
+  }
+  
+  .feedbackSection {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+  }
+  
+  .feedbackInput {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #C8D300;
+    border-radius: 5px;
+    resize: vertical;
+    min-height: 80px;
+    margin-bottom: 10px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .feedbackButton {
+    background-color: #662483;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px;
+  }
+  
+  .feedbackButton:hover {
+    background-color: #4e1c63;
+  }
+  
+  .feedbackSent {
+    color: #009A93;
+    font-style: italic;
+    font-size: 14px;
+    text-align: center;
+  }
+  
+  .emptyState {
+    text-align: center;
+    padding: 40px 0;
+    color: #999;
+    font-style: italic;
+  }
+  
+  .finalCountdown {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #E6007E;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+    z-index: 100;
+    width: 80%;
+    max-width: 500px;
+  }
+  
+  .loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+  }
+  
+  .loader {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #662483;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  
+  .errorContainer {
+    text-align: center;
+    padding: 40px;
+    background-color: #fff0f0;
+    border-radius: 8px;
+    margin: 40px auto;
+    max-width: 600px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .errorContainer h1 {
+    color: #E30613;
+    margin-bottom: 20px;
+  }
+  
+  .button {
+    padding: 10px 20px;
+    background-color: #662483;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    transition: background-color 0.3s;
+  }
+  
+  .button:hover {
+    background-color: #4e1c63;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsiveness */
+  @media (max-width: 768px) {
+    .cardGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .tabButton {
+      padding: 10px 15px;
+      font-size: 14px;
+    }
+    
+    .finalCountdown {
+      width: 90%;
+      padding: 10px 15px;
+      font-size: 14px;
+    }
+  }
+  
+  /* Estilos para pantallas muy pequeñas */
+  @media (max-width: 480px) {
+    .container {
+      padding: 10px;
+    }
+    
+    .title {
+      font-size: 20px;
+    }
+    
+    .timer {
+      width: 160px;
+      font-size: 1em;
+    }
+    
+    .cardGrid {
+      grid-template-columns: 1fr;
+    }
+    
+    .cardHeader {
+      flex-direction: column;
+    }
+    
+    .contentContainer {
+      padding: 15px;
+    }
+    
+    .feedbackButton {
+      width: 100%;
+      padding: 10px;
+    }
+  }

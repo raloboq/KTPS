@@ -138,7 +138,7 @@ import type { NextRequest } from 'next/server';
 import { IS_DEMO_MODE } from './utils/demoMode';
 
 // Define las rutas que requieren autenticación de estudiante
-const STUDENT_PROTECTED_ROUTES = ['/activity-select', '/think', '/pair', '/share'];
+const STUDENT_PROTECTED_ROUTES = ['/activity-select', '/think', '/pair', '/share', '/activity-completed'];
 
 // Define las rutas que requieren autenticación de profesor
 const TEACHER_PROTECTED_ROUTES = ['/admin', '/course-select'];
@@ -274,6 +274,7 @@ export const config = {
     '/activity-select',
     '/think/:path*',
     '/pair/:path*',
-    '/share/:path*'
+    '/share/:path*',
+    '/activity-completed'
   ],
 };
