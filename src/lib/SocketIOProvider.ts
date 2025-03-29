@@ -479,6 +479,18 @@ export class SocketIOProvider {
       this.socket.on('user-left', this.onUserLeft.bind(this));
       this.socket.on('pong', this.onPong.bind(this));
       this.socket.on('error', this.onError.bind(this));
+
+      this.socket.io.on('reconnect_attempt', () => {
+        console.log('🔁 Intentando reconectar...');
+      });
+      
+      this.socket.io.on('reconnect', (attemptNumber: any) => {
+        console.log(`✅ Reconectado en el intento ${attemptNumber}`);
+      });
+      
+      this.socket.io.on('reconnect_failed', () => {
+        console.log('❌ Falló la reconexión después de varios intentos');
+      });
       
       // Escuchar cambios locales del documento
       doc.on('update', this.onDocumentUpdate.bind(this));
@@ -519,7 +531,7 @@ export class SocketIOProvider {
 
   private onDisconnect(reason: string) {
     console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
-    console.log('¿Intentando reconectar?', this.socket.io._reconnection); 
+    //console.log('¿Intentando reconectar?', this.socket.io._reconnection); 
     this._connected = false;
     
     // Limpiar el intervalo de ping al desconectar
