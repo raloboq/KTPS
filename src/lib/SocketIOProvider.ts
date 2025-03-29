@@ -451,18 +451,14 @@ export class SocketIOProvider {
     try {
       // Configuración mejorada del socket
       this.socket = io(socketUrl, {
-        // Usar sólo polling ya que WebSocket está fallando
+        path: '/socket.io/',
         transports: ['polling', 'websocket'],
-        upgrade: true,
-        // Deshabilitar explícitamente el upgrade a WebSocket
-        //upgrade: false,
-        // Usar valores de timeout más razonables
+        upgrade: true,    
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
-        // Información para el servidor
         query: {
           roomId: documentId,
           userName: userName,
@@ -492,10 +488,16 @@ export class SocketIOProvider {
     }
   }
 
+  
+
   private onConnect() {
     console.log('🟢 Conectado al servidor Socket.io con ID:', this.socket.id);
     this._connected = true;
     this._reconnectAttempts = 0;
+
+    this.socket.onAny((event: any, ...args: any) => {
+        console.log(`[SOCKET EVENT] ${event}`, args);
+      });
     
     // Unirse al documento
     this.socket.emit('join-document', this.documentId, this.userName);
@@ -517,6 +519,7 @@ export class SocketIOProvider {
 
   private onDisconnect(reason: string) {
     console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
+    console.log('¿Intentando reconectar?', this.socket.io.reconnecting);
     this._connected = false;
     
     // Limpiar el intervalo de ping al desconectar
