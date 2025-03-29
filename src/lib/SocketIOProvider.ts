@@ -519,7 +519,7 @@ export class SocketIOProvider {
 
   private onDisconnect(reason: string) {
     console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
-    console.log('¿Intentando reconectar?', this.socket.io.reconnecting);
+    console.log('¿Intentando reconectar?', this.socket.io._reconnection); 
     this._connected = false;
     
     // Limpiar el intervalo de ping al desconectar
