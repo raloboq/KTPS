@@ -459,7 +459,7 @@ export class SocketIOProvider {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
-        query: {
+        auth: {
           roomId: documentId,
           userName: userName,
           clientId: this.clientId
