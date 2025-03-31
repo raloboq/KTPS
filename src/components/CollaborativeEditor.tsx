@@ -459,6 +459,18 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
       CollaborationCursor.configure({ provider, user: userInfo }),
     ],
   });*/
+
+  // 🧪 Agrega este bloque para debug
+  useEffect(() => {
+    const handler = (update: Uint8Array, origin: any) => {
+      console.log('🧪 DEBUG DIRECTO: update en doc. Origin:', origin);
+    };
+    doc.on('update', handler);
+    return () => {
+      doc.off('update', handler);
+    };
+  }, [doc]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ history: false }),
