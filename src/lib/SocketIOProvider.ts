@@ -724,7 +724,7 @@ export class SocketIOProvider {
     }
     
     this.awareness.destroy();
-    this.socket.disconnect();
+    //this.socket.disconnect();
     this._callbacks.clear();
   }
 }
