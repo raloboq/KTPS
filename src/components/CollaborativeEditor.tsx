@@ -512,6 +512,13 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
   console.log('🧠 Editor montado:', editor?.getJSON());
 console.log('📍 Awareness:', provider?.awareness?.getLocalState());
 
+useEffect(() => {
+    const frag = doc.getXmlFragment('default');
+    frag.observeDeep((events) => {
+      console.log('🔍 XmlFragment modificado:', events);
+    });
+  }, [doc]);
+
   
 
   return (
