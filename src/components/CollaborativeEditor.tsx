@@ -435,6 +435,7 @@ type EditorProps = {
 };
 
 function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+    
   const userInfo = useMemo(() => ({
     name: userName,
     color: '#' + Math.floor(Math.random()*16777215).toString(16),
@@ -471,6 +472,16 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     };
   }, [doc]);
 
+  useEffect(() => {
+    if (doc) {
+      const fragment = doc.getXmlFragment('default');
+      const xmlText = new Y.XmlText();
+      xmlText.insert(0, 'Prueba de contenido');
+      fragment.insert(0, [xmlText]);
+      console.log('🌟 Fragmento escrito manualmente');
+    }
+  }, [doc]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ history: false }),
@@ -485,6 +496,12 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     ],
     editorProps: { attributes: { class: styles.editor } },
   });
+
+  console.log('🧪 Tiptap editor creado:', editor);
+  console.log('🧠 Editor montado:', editor?.getJSON());
+console.log('📍 Awareness:', provider?.awareness?.getLocalState());
+
+  
 
   return (
     <div className={styles.container}>
