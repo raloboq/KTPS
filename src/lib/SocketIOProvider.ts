@@ -460,7 +460,7 @@ export class SocketIOProvider {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
-        
+        forceBase64: false, 
         auth: {
           roomId: documentId,
           userName: userName,
@@ -607,32 +607,49 @@ export class SocketIOProvider {
             tipo: typeof update,
             esArray: Array.isArray(update),
             esUint8Array: update instanceof Uint8Array,
+            esArrayBuffer: update instanceof ArrayBuffer,
             constructor: update?.constructor?.name,
             longitud: update?.length || update?.byteLength
           });
           
-          // Asegurarse de que es un Uint8Array
-          let updateArray: Uint8Array;
-          if (update instanceof Uint8Array) {
-            updateArray = update;
-          } else if (Array.isArray(update)) {
-            updateArray = new Uint8Array(update);
-          } else if (typeof update === 'object' && update !== null) {
-            // Intentar convertir desde un objeto similar a array
-            updateArray = new Uint8Array(Object.values(update));
-          } else {
-            throw new Error(`Formato de datos no soportado: ${typeof update}`);
+          // Si recibimos un ArrayBuffer, convertirlo a Uint8Array
+          if (update instanceof ArrayBuffer) {
+            update = new Uint8Array(update);
+          } 
+          // Si recibimos un objeto que parece un array pero no es Uint8Array
+          else if (typeof update === 'object' && update !== null && !Array.isArray(update) && !(update instanceof Uint8Array)) {
+            // Verificar si tiene propiedades numéricas (parece un array)
+            const hasNumericProps = Object.keys(update).some(key => !isNaN(Number(key)));
+            if (hasNumericProps) {
+              // Convertir objeto similar a array en Uint8Array
+              update = new Uint8Array(Object.values(update));
+            }
           }
           
-          console.log('Aplicando update convertido:', updateArray.byteLength);
-          Y.applyUpdate(this.doc, updateArray);
+          // Verificar que tenemos un Uint8Array con datos suficientes
+          if (!(update instanceof Uint8Array) || update.byteLength < 10) {
+            console.warn('Documento recibido inválido o vacío, creando uno nuevo');
+            
+            // En lugar de fallar, inicializar un documento vacío
+            Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(new Y.Doc()));
+            this.emit('synced', {});
+            return;
+          }
+          
+          console.log('Aplicando update convertido:', update.byteLength, 'bytes');
+          Y.applyUpdate(this.doc, update);
           this.emit('synced', {});
         } catch (error) {
           console.error('Error al aplicar estado inicial:', error);
           this.emit('error', { message: 'Error al sincronizar documento' });
           
           // Solicitar de nuevo después de un retraso
-          setTimeout(() => this.sync(), 2000);
+          setTimeout(() => {
+            if (this._connected) {
+              console.log('Reintentando sincronización...');
+              this.socket.emit('sync-request', this.documentId);
+            }
+          }, 2000);
         }
       }
 
