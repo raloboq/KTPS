@@ -732,7 +732,7 @@ type EditorProps = {
   sessionId: number | null;
 };
 
-function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+/*function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     useEffect(() => {
     console.log('TiptapEditor iniciado con:', { 
     docAvailable: !!doc, 
@@ -806,4 +806,63 @@ function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
       <EditorContent editor={editor} className={styles.editorContainer} />
     </div>
   );
-}
+}*/
+function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+    useEffect(() => {
+      console.log('TiptapEditor iniciado con:', { 
+        docAvailable: !!doc, 
+        providerAvailable: !!provider,
+        userName, 
+        sessionId 
+      });
+  
+      // Verifica el tipo antes de continuar
+      const tipo = doc.get('default');
+      console.log('🔍 Tipo del fragmento recibido en editor:', tipo.constructor.name);
+    }, [doc, provider, userName, sessionId]);
+  
+    const userInfo = useMemo(() => ({
+      name: userName,
+      color: '#' + Math.floor(Math.random()*16777215).toString(16),
+      picture: 'https://liveblocks.io/avatars/avatar-1.png'
+    }), [userName]);
+  
+    const xmlFragment = useMemo(() => doc.getXmlFragment('default'), [doc]); // 👈 AQUÍ EL CAMBIO
+  
+    const editor = useEditor({
+      editorProps: {
+        attributes: {
+          class: styles.editor,
+        },
+      },
+      onUpdate: ({ editor }) => {
+        const content = editor.getHTML();
+        console.log('Editor actualizado, longitud del contenido:', content.length);
+      },
+      extensions: [
+        StarterKit.configure({
+          history: false,
+        }),
+        Collaboration.configure({
+          document: xmlFragment, // 👈 AQUÍ EL CAMBIO
+        }),
+        CollaborationCursor.configure({
+          provider: provider,
+          user: userInfo,
+        }),
+      ],
+    });
+  
+    return (
+      <div className={styles.container}>
+        <div className={styles.editorHeader}>
+          <Toolbar editor={editor} />
+          <div className={styles.statusIndicator}>
+            <span className={styles.statusDot}></span>
+            Colaborativo
+          </div>
+        </div>
+        <EditorContent editor={editor} className={styles.editorContainer} />
+      </div>
+    );
+  }
