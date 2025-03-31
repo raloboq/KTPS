@@ -447,7 +447,7 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     return xml;
   }, [doc]);
 
-  const editor = useEditor({
+  /*const editor = useEditor({
     editorProps: {
       attributes: {
         class: styles.editor,
@@ -458,6 +458,20 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
       Collaboration.configure({ document: fragment }),
       CollaborationCursor.configure({ provider, user: userInfo }),
     ],
+  });*/
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ history: false }),
+      Collaboration.configure({
+        document: doc, // ✅ PASA EL Y.Doc, no XmlFragment
+        field: 'default', // ✅ para que use getXmlFragment('default')
+      }),
+      CollaborationCursor.configure({
+        provider,
+        user: userInfo,
+      }),
+    ],
+    editorProps: { attributes: { class: styles.editor } },
   });
 
   return (
