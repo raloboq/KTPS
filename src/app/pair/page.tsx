@@ -48,7 +48,7 @@ export default function PairPage() {
 import { Room } from "@/app/pair/Room";
 import { CollaborativeEditor } from "@/components/CollaborativeEditor";
 import Cookies from 'js-cookie';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 
 // Componente de carga para Suspense
 function Loading() {
@@ -65,15 +65,20 @@ function PairPageContent() {
     return <div>Error: Faltan datos necesarios. Por favor, vuelve a iniciar el proceso.</div>;
   }
 
-  return (
-    <Room>
-      <CollaborativeEditor 
-        documentId={documentId} 
-        userName={userName} 
-        roomName={roomName} 
-      />
-    </Room>
-  );
+ // ✅ Memoiza el componente editor para evitar recreaciones
+ const memoizedEditor = useMemo(() => (
+  <CollaborativeEditor 
+    documentId={documentId} 
+    userName={userName} 
+    roomName={roomName} 
+  />
+), [documentId, userName, roomName]);
+
+return (
+  <Room>
+    {memoizedEditor}
+  </Room>
+);
 }
 
 // Componente principal envuelto en Suspense
