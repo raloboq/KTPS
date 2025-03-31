@@ -827,8 +827,13 @@ function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
       picture: 'https://liveblocks.io/avatars/avatar-1.png'
     }), [userName]);
   
-    const xmlFragment = useMemo(() => doc.getXmlFragment('default'), [doc]); // 👈 AQUÍ EL CAMBIO
-  
+    const xmlFragment = useMemo(() => {
+        if ('getXmlFragment' in doc && typeof doc.getXmlFragment === 'function') {
+          return doc.getXmlFragment('default'); // es un Y.Doc
+        }
+        return doc; // ya es un Y.XmlFragment
+      }, [doc]);
+      
     const editor = useEditor({
       editorProps: {
         attributes: {
