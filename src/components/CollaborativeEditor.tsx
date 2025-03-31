@@ -491,6 +491,7 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
       }),*/
       Collaboration.configure({
         document: doc.getXmlFragment('default'),
+        field: 'default',
       }),
       CollaborationCursor.configure({
         provider,
