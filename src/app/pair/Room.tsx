@@ -466,13 +466,7 @@ export function Room({ children }: { children: ReactNode }) {
 //la mas nueva 31 mar
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  ReactElement
-} from 'react';
+import React, { ReactNode, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import styles from './pairPage.module.css';
@@ -484,14 +478,14 @@ import * as Y from 'yjs';
 const CUSTOM_SYSTEM_INSTRUCTION =
   "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
 
-// 🔧 Tipo de props corregido
-type RoomProps = {
-  children: ReactElement<{ provider: SocketIOProvider; doc: Y.Doc }>;
-};
+interface RoomProps {
+  children: React.ReactElement<{ provider: SocketIOProvider; doc: Y.Doc }>;
+}
 
-export function Room({ children }: { children: ReactElement<any> }) {
-  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+export function Room({ children }: RoomProps) {
+  const [timeRemaining, setTimeRemaining] = useState(900);
   const [showPopup, setShowPopup] = useState(false);
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
@@ -502,7 +496,6 @@ export function Room({ children }: { children: ReactElement<any> }) {
   const [showReflexion, setShowReflexion] = useState(false);
   const [provider, setProvider] = useState<SocketIOProvider | null>(null);
   const [doc, setDoc] = useState<Y.Doc | null>(null);
-  const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const finalizarSesionColaborativa = useCallback(async () => {
@@ -515,13 +508,17 @@ export function Room({ children }: { children: ReactElement<any> }) {
         });
         console.log('Sesión colaborativa finalizada');
         setShowPopup(true);
-        setTimeout(() => router.push('/share'), 3000);
+        setTimeout(() => {
+          router.push('/share');
+        }, 3000);
       } catch (error) {
         console.error('Error al finalizar sesión colaborativa:', error);
       }
     } else {
       console.error('No se pudo finalizar sesión colaborativa. sessionId no existe');
-      setTimeout(() => router.push('/share'), 3000);
+      setTimeout(() => {
+        router.push('/share');
+      }, 3000);
     }
   }, [sessionId, router]);
 
@@ -533,30 +530,44 @@ export function Room({ children }: { children: ReactElement<any> }) {
     if (userNameFromCookie) {
       setUserName(userNameFromCookie);
       localStorage.setItem('userName', userNameFromCookie);
-    } else setError('No se encontró nombre de usuario');
+    } else {
+      setError('No se encontró nombre de usuario');
+    }
 
-    if (roomIdFromCookie) setRoomId(roomIdFromCookie);
-    else setError('No se encontró ID de sala');
+    if (roomIdFromCookie) {
+      setRoomId(roomIdFromCookie);
+    } else {
+      setError('No se encontró ID de sala');
+    }
 
-    if (roomNameFromCookie) setRoomName(roomNameFromCookie);
+    if (roomNameFromCookie) {
+      setRoomName(roomNameFromCookie);
+    }
 
     if (userNameFromCookie && roomIdFromCookie) {
       const yDoc = new Y.Doc();
-      const socketIOProvider = new SocketIOProvider(
-        yDoc,
-        roomIdFromCookie,
-        userNameFromCookie,
-        {
-          name: userNameFromCookie,
-          color: '#' + Math.floor(Math.random() * 16777215).toString(16)
-        }
-      );
+      try {
+        const socketIOProvider = new SocketIOProvider(
+          yDoc,
+          roomIdFromCookie,
+          userNameFromCookie,
+          {
+            name: userNameFromCookie,
+            color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+          }
+        );
 
-      setDoc(yDoc);
-      setProvider(socketIOProvider);
-      obtenerReflexion(userNameFromCookie);
-      iniciarSesionColaborativa(roomIdFromCookie, roomNameFromCookie || 'Colaboración');
+        setDoc(yDoc);
+        setProvider(socketIOProvider);
+
+        obtenerReflexion(userNameFromCookie);
+        iniciarSesionColaborativa(roomIdFromCookie, roomNameFromCookie || 'Colaboración');
+      } catch (error) {
+        console.error('Error al inicializar componentes:', error);
+        setError('Error al inicializar el entorno colaborativo');
+      }
     }
+
     setLoading(false);
   }, []);
 
@@ -593,12 +604,15 @@ export function Room({ children }: { children: ReactElement<any> }) {
 
   useEffect(() => {
     if (loading) return;
-    if (timerRef.current) clearInterval(timerRef.current);
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
     timerRef.current = setInterval(() => {
       setTimeRemaining((prevTime) => {
         if (prevTime <= 1) {
-          clearInterval(timerRef.current!);
+          if (timerRef.current) clearInterval(timerRef.current);
           console.log('¡Se acabó el tiempo!');
           finalizarSesionColaborativa();
           return 0;
@@ -609,8 +623,8 @@ export function Room({ children }: { children: ReactElement<any> }) {
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      provider?.destroy();
-      doc?.destroy();
+      if (provider) provider.destroy();
+      if (doc) doc.destroy();
     };
   }, [loading, provider, doc, finalizarSesionColaborativa]);
 
@@ -620,9 +634,16 @@ export function Room({ children }: { children: ReactElement<any> }) {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
+  const memoizedEditor = useMemo(() => {
+    if (provider && doc) {
+      return React.cloneElement(children, { provider, doc });
+    }
+    return null;
+  }, [provider, doc, children]);
+
   if (loading) return <Loading />;
   if (error) return <div className={styles.error}>Error: {error}</div>;
-  if (!userName || !roomId) return <div className={styles.error}>Falta información necesaria.</div>;
+  if (!userName || !roomId) return <div className={styles.error}>Falta información necesaria (nombre de usuario o ID de sala). Por favor, regrese a la página de actividades.</div>;
   if (!doc || !provider) return <div className={styles.loading}>Inicializando entorno colaborativo...</div>;
 
   return (
@@ -632,11 +653,15 @@ export function Room({ children }: { children: ReactElement<any> }) {
 
       <div className={styles.instructionsContainer}>
         <h2 className={styles.subtitle}>Instrucciones del Editor Colaborativo</h2>
+        <p className={styles.welcome}>¡Bienvenido al editor colaborativo, {userName}!</p>
         <ul className={styles.instructions}>
-          <li>Trabaja con tu compañero para discutir sus ideas individuales.</li>
-          <li>Utiliza el editor para escribir un resumen conjunto.</li>
-          <li>Aborden las tres preguntas planteadas.</li>
+          <li>Discute y compara tus ideas con tu compañero sobre las redes sociales.</li>
+          <li>Escriban juntos un resumen de sus ideas en el editor.</li>
+          <li>Usen la barra de herramientas para formatear el texto.</li>
+          <li>Respondan las tres preguntas de la fase individual.</li>
+          <li>Logren una síntesis clara y colaborativa.</li>
         </ul>
+        <p className={styles.encouragement}>¡Aprovecha esta oportunidad para aprender de tu compañero!</p>
       </div>
 
       <div className={styles.reflexionContainer}>
@@ -652,24 +677,17 @@ export function Room({ children }: { children: ReactElement<any> }) {
       </div>
 
       <div className={styles.chatContainer}>
-        <div className={styles.editorContainer}>
-        {provider && doc &&
-    React.cloneElement(children, { provider, doc })}
-        </div>
+        <div className={styles.editorContainer}>{memoizedEditor}</div>
 
         <div className={styles.chatAreaWrapper}>
-          <ChatArea
-            systemInstruction={CUSTOM_SYSTEM_INSTRUCTION}
-            userName={userName}
-            roomId={roomId}
-          />
+          <ChatArea systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} userName={userName} roomId={roomId} />
         </div>
       </div>
 
       {showPopup && (
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
-            <p>Gracias por participar. Espera instrucciones del profesor.</p>
+            <p>Gracias por participar en esta actividad y ayudar al avance de la ciencia. Espera las instrucciones del profesor.</p>
             <button onClick={() => setShowPopup(false)}>Aceptar</button>
           </div>
         </div>
