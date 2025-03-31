@@ -475,10 +475,17 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
   useEffect(() => {
     if (doc) {
       const fragment = doc.getXmlFragment('default');
-      const xmlText = new Y.XmlText();
-      xmlText.insert(0, 'Prueba de contenido');
-      fragment.insert(0, [xmlText]);
-      console.log('🌟 Fragmento escrito manualmente');
+  
+      if (fragment.length === 0) {
+        const paragraph = new Y.XmlElement('p');
+        const textNode = new Y.XmlText();
+        textNode.insert(0, 'Prueba de contenido');
+  
+        paragraph.insert(0, [textNode]);
+        fragment.insert(0, [paragraph]);
+  
+        console.log('🌟 Fragmento inicial con <p> insertado');
+      }
     }
   }, [doc]);
 
