@@ -451,6 +451,7 @@ export class SocketIOProvider {
     try {
       // Configuración mejorada del socket
       this.socket = io(socketUrl, {
+        
         path: '/socket.io/',
         transports: ['polling', 'websocket'],
         upgrade: true,    
@@ -465,7 +466,7 @@ export class SocketIOProvider {
           clientId: this.clientId
         }
       });
-      
+      (window as any).socket = this.socket;
       console.log('Socket creado con opciones:', this.socket.io.opts);
       
       // Configurar event listeners
