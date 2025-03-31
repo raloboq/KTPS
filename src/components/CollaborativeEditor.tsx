@@ -565,7 +565,7 @@ export function CollaborativeEditor({
     if (!provider && !doc && documentId && userName) {
       console.log('Inicializando doc y provider localmente para:', documentId, userName);
       const yDoc = new Y.Doc();
-      
+      console.log('collaborative editor.tsx 👉 doc.toJSON()', yDoc.toJSON());
       try {
         const socketProvider = new SocketIOProvider(
           yDoc,

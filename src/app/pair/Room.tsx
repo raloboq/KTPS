@@ -525,6 +525,7 @@ export function Room({ children }: { children: ReactNode }) {
     if (userNameFromCookie && roomIdFromCookie) {
       // Inicializar YJS y SocketIOProvider
       const yDoc = new Y.Doc();
+      console.log('room.tsx 👉 doc.toJSON()', yDoc.toJSON());
       
       try {
         const socketIOProvider = new SocketIOProvider(
