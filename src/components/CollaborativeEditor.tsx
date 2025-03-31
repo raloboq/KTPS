@@ -678,7 +678,7 @@ export function CollaborativeEditor({
 
   // Esperar a que todo esté listo antes de renderizar el editor
   useEffect(() => {
-    if (actualDoc && actualProvider) {
+    if (!editorReady && actualDoc && actualProvider) {
       console.log('Doc y provider listos, configurando editor');
       setEditorReady(true);
     }
@@ -733,12 +733,14 @@ type EditorProps = {
 };
 
 function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
-  console.log('TiptapEditor iniciado con:', { 
+    useEffect(() => {
+    console.log('TiptapEditor iniciado con:', { 
     docAvailable: !!doc, 
     providerAvailable: !!provider,
     userName, 
     sessionId 
   });
+}, []);
     
   const userInfo = useMemo(() => ({
     name: userName,
