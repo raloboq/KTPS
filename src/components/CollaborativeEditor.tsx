@@ -698,11 +698,11 @@ export function CollaborativeEditor({
     return <div className={styles.loading}>Cargando editor colaborativo...</div>;
   }
   
-  console.log('Renderizando TiptapEditor con:', {
+  /*console.log('Renderizando TiptapEditor con:', {
     docAvailable: !!actualDoc,
     providerAvailable: !!actualProvider,
     userName
-  });
+  });*/
   
   return (
     <>
