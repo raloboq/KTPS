@@ -44,7 +44,10 @@ export function CollaborativeEditor({
     if (!provider && !doc && documentId && userName) {
       console.log('Inicializando doc y provider localmente para:', documentId, userName);
       const yDoc = new Y.Doc();
-      console.log('collaborative editor.tsx 👉 doc.toJSON()', yDoc.toJSON());
+      
+      // Inicializar explícitamente el fragmento XML
+      const xmlFragment = yDoc.getXmlFragment('default');
+      console.log('Fragmento XML inicializado explícitamente:', xmlFragment);
       
       try {
         const socketProvider = new SocketIOProvider(
@@ -162,7 +165,7 @@ export function CollaborativeEditor({
       console.log('Doc y provider listos, configurando editor');
       setEditorReady(true);
     }
-  }, [actualDoc, actualProvider]);
+  }, [actualDoc, actualProvider, editorReady]);
 
   // Limpiar timeouts al desmontar el componente
   useEffect(() => {
@@ -189,7 +192,7 @@ export function CollaborativeEditor({
         />
       )}
       
-      <TiptapEditor 
+      <SimpleTiptapEditor 
         doc={actualDoc!} 
         provider={actualProvider!} 
         userName={userName || 'Usuario anónimo'} 
@@ -206,9 +209,9 @@ type EditorProps = {
     sessionId: number | null;
 };
 
-function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+function SimpleTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
   useEffect(() => {
-    console.log('TiptapEditor iniciado con:', { 
+    console.log('SimpleTiptapEditor iniciado con:', { 
       docAvailable: !!doc, 
       providerAvailable: !!provider,
       userName, 
@@ -221,36 +224,40 @@ function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     color: '#' + Math.floor(Math.random()*16777215).toString(16),
     picture: 'https://liveblocks.io/avatars/avatar-1.png'
   }), [userName]);
-
-  // Crear el fragmento XML correctamente
-  const xmlFragment = useMemo(() => {
-    console.log('🔍 Tipo del fragmento recibido en editor:', doc.constructor.name);
-    // Asegurar que creamos el fragmento correctamente - clave para resolver el error
-    return doc.getXmlFragment('default');
+  
+  // IMPORTANTE: Crear el documento de texto directamente en vez de usar XML Fragment
+  const ydoc = useMemo(() => {
+    return doc;
+  }, [doc]);
+  
+  // Crear un fragmento XML explícitamente
+  const ytext = useMemo(() => {
+    // Acceder directamente al tipo 'text' en lugar de 'xmlFragment'
+    return doc.getText('default');
   }, [doc]);
 
+  // Usar una configuración simplificada para el editor
   const editor = useEditor({
     editorProps: {
       attributes: {
         class: styles.editor,
       },
     },
-    onUpdate: ({ editor }) => {
-      const content = editor.getHTML();
-      console.log('Editor actualizado, longitud del contenido:', content.length);
-    },
     extensions: [
       StarterKit.configure({
         history: false,
       }),
+      // Usar el tipo Text en lugar de XmlFragment para la colaboración
       Collaboration.configure({
-        document: xmlFragment,
+        document: ydoc,
+        field: 'default',
       }),
       CollaborationCursor.configure({
         provider: provider,
         user: userInfo,
       }),
     ],
+    content: '<p>Escribe aquí tu colaboración...</p>',
   });
 
   return (
