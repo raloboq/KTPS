@@ -532,6 +532,8 @@ export class SocketIOProvider {
 
   private onDisconnect(reason: string) {
     console.log('🔴 Desconectado del servidor Socket.io. Razón:', reason);
+    console.log('🔍 ¿Se llama a socket.disconnect() desde algún lugar?');
+  console.trace();
     //console.log('¿Intentando reconectar?', this.socket.io._reconnection); 
     this._connected = false;
     
@@ -712,6 +714,8 @@ export class SocketIOProvider {
 
   // Limpieza
   destroy() {
+    console.log('💥 Llamando a provider.destroy()');
+    console.trace();
     this.doc.off('update', this.onDocumentUpdate);
     
     if (this._pingInterval) {
