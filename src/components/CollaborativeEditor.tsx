@@ -520,7 +520,6 @@ function TiptapEditor({ doc, provider, userName, sessionId, queueInteraction, ca
 }*/
 "use client"
 // src/components/CollaborativeEditor.tsx
-// Actualiza el componente para manejar errores de sesión y mostrar estado de conexión
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -528,7 +527,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import * as Y from "yjs";
 import { SocketIOProvider } from "@/lib/SocketIOProvider";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Toolbar } from "./Toolbar";
 import styles from "./CollaborativeEditor.module.css";
 import ConnectionStatus from "./ConnectionStatus";
@@ -741,11 +740,11 @@ function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     sessionId 
   });
     
-  const userInfo = {
+  const userInfo = useMemo(() => ({
     name: userName,
     color: '#' + Math.floor(Math.random()*16777215).toString(16),
     picture: 'https://liveblocks.io/avatars/avatar-1.png'
-  };
+  }), [userName]);
 
   // Agregar awareness inicial para el usuario actual
   useEffect(() => {

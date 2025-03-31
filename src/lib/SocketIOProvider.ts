@@ -669,12 +669,15 @@ export class SocketIOProvider {
   private onDocumentUpdate(update: Uint8Array, origin: any) {
     // Solo enviar actualizaciones que no vinieron del servidor
     if (origin !== this && this._connected) {
-      try {
-        console.log('Enviando actualización al servidor');
+      //try {
+        console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
         this.socket.emit('sync-update', update);
-      } catch (error) {
-        console.error('Error al enviar actualización:', error);
-      }
+      //} catch (error) {
+      //  console.error('Error al enviar actualización:', error);
+      //}
+    }
+    else{
+        console.log('🔄 Update recibido del servidor o no conectado, no reenviar');
     }
   }
 
