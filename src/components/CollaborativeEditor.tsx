@@ -485,9 +485,12 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ history: false }),
-      Collaboration.configure({
+      /*Collaboration.configure({
         document: doc, // ✅ PASA EL Y.Doc, no XmlFragment
         field: 'default', // ✅ para que use getXmlFragment('default')
+      }),*/
+      Collaboration.configure({
+        document: doc.getXmlFragment('default'),
       }),
       CollaborationCursor.configure({
         provider,
