@@ -726,10 +726,10 @@ export function CollaborativeEditor({
 }
 
 type EditorProps = {
-  doc: Y.Doc;
-  provider: SocketIOProvider;
-  userName: string;
-  sessionId: number | null;
+    doc: Y.Doc | Y.XmlFragment;
+    provider: SocketIOProvider;
+    userName: string;
+    sessionId: number | null;
 };
 
 /*function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
@@ -809,17 +809,20 @@ type EditorProps = {
 }*/
 function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     useEffect(() => {
-      console.log('TiptapEditor iniciado con:', { 
-        docAvailable: !!doc, 
-        providerAvailable: !!provider,
-        userName, 
-        sessionId 
-      });
-  
-      // Verifica el tipo antes de continuar
-      const tipo = doc.get('default');
-      console.log('🔍 Tipo del fragmento recibido en editor:', tipo.constructor.name);
-    }, [doc, provider, userName, sessionId]);
+        console.log('TiptapEditor iniciado con:', { 
+          docAvailable: !!doc, 
+          providerAvailable: !!provider,
+          userName, 
+          sessionId 
+        });
+      
+        if ((doc as Y.Doc).get) {
+          const tipo = (doc as Y.Doc).get('default');
+          console.log('🔍 Tipo del fragmento recibido en editor:', tipo.constructor.name);
+        } else {
+          console.warn('⚠️ doc no tiene método get: probablemente ya es un XmlFragment');
+        }
+      }, [doc, provider, userName, sessionId]);
   
     const userInfo = useMemo(() => ({
       name: userName,
@@ -828,12 +831,21 @@ function TiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     }), [userName]);
   
     const xmlFragment = useMemo(() => {
-        if ('getXmlFragment' in doc && typeof doc.getXmlFragment === 'function') {
-          return doc.getXmlFragment('default'); // es un Y.Doc
+        if ((doc as Y.Doc)?.getXmlFragment instanceof Function) {
+          const fragment = (doc as Y.Doc).getXmlFragment('default');
+          console.log('✅ Obtenido fragmento desde Y.Doc:', fragment);
+          return fragment;
         }
-        return doc; // ya es un Y.XmlFragment
-      }, [doc]);
       
+        if (doc instanceof Y.XmlFragment) {
+          console.log('✅ doc ya es un Y.XmlFragment');
+          return doc;
+        }
+      
+        console.warn('⚠️ doc no es un Y.Doc ni un Y.XmlFragment. Retornando nuevo fragmento vacío.');
+        return new Y.XmlFragment();
+      }, [doc]);
+
     const editor = useEditor({
       editorProps: {
         attributes: {
