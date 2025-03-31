@@ -460,6 +460,7 @@ export class SocketIOProvider {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
+        
         auth: {
           roomId: documentId,
           userName: userName,
@@ -565,9 +566,27 @@ export class SocketIOProvider {
     console.log('Pong recibido del servidor:', data.timestamp);
   }
 
-  private onSyncDocument(update: Uint8Array) {
+  /*private onSyncDocument(update: any) {
     try {
-      console.log('Recibido estado inicial del documento');
+        console.log('Recibido estado inicial del documento:', {
+            type: typeof update,
+            isArray: Array.isArray(update),
+            isUint8Array: update instanceof Uint8Array,
+            constructor: update.constructor.name,
+            length: update.length || update.byteLength,
+            preview: update instanceof Uint8Array ? 
+              `Primeros bytes: ${Array.from(update.slice(0, 10))}` : 
+              'No es Uint8Array'
+          });
+          
+          // Si no es un Uint8Array, convertirlo
+          if (!(update instanceof Uint8Array)) {
+            if (Array.isArray(update)) {
+              update = new Uint8Array(update);
+            } else {
+              throw new Error(`Formato inesperado: ${typeof update}`);
+            }
+          }
       Y.applyUpdate(this.doc, update);
       this.emit('synced', {});
     } catch (error) {
@@ -581,7 +600,41 @@ export class SocketIOProvider {
         }
       }, 2000);
     }
-  }
+  }*/
+    private onSyncDocument(update: any) {
+        try {
+          console.log('Recibido estado inicial del documento', {
+            tipo: typeof update,
+            esArray: Array.isArray(update),
+            esUint8Array: update instanceof Uint8Array,
+            constructor: update?.constructor?.name,
+            longitud: update?.length || update?.byteLength
+          });
+          
+          // Asegurarse de que es un Uint8Array
+          let updateArray: Uint8Array;
+          if (update instanceof Uint8Array) {
+            updateArray = update;
+          } else if (Array.isArray(update)) {
+            updateArray = new Uint8Array(update);
+          } else if (typeof update === 'object' && update !== null) {
+            // Intentar convertir desde un objeto similar a array
+            updateArray = new Uint8Array(Object.values(update));
+          } else {
+            throw new Error(`Formato de datos no soportado: ${typeof update}`);
+          }
+          
+          console.log('Aplicando update convertido:', updateArray.byteLength);
+          Y.applyUpdate(this.doc, updateArray);
+          this.emit('synced', {});
+        } catch (error) {
+          console.error('Error al aplicar estado inicial:', error);
+          this.emit('error', { message: 'Error al sincronizar documento' });
+          
+          // Solicitar de nuevo después de un retraso
+          setTimeout(() => this.sync(), 2000);
+        }
+      }
 
   private onUpdate(update: Uint8Array) {
     try {
