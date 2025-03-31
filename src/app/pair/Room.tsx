@@ -204,241 +204,9 @@ export function Room({ children }: { children: ReactNode }) {
             </RoomProvider>
   );
 }*/
-//esta es la nueva con socketIO
-/*'use client';
 
-import React, { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loading } from '@/components/Loading';
-import styles from './pairPage.module.css';
-import ChatArea from "../chat/components/Chatarea";
-import { SocketIOProvider } from '@/lib/SocketIOProvider';
-import * as Y from 'yjs';
-
-const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
-
-export function Room({ children }: { children: ReactNode }) {
-  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
-  const [showPopup, setShowPopup] = useState(false);
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [roomName, setRoomName] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [reflexion, setReflexion] = useState<string | null>(null);
-  const [showReflexion, setShowReflexion] = useState(false);
-  const [provider, setProvider] = useState<SocketIOProvider | null>(null);
-  const [doc, setDoc] = useState<Y.Doc | null>(null);
-  
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const finalizarSesionColaborativa = useCallback(async () => {
-    if (sessionId) {
-      try {
-        await fetch('/api/finalizar-sesion-colaborativa', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_sesion_colaborativa: sessionId })
-        });
-        console.log('Sesión colaborativa finalizada');
-        setShowPopup(true);
-      } catch (error) {
-        console.error('Error al finalizar sesión colaborativa:', error);
-      }
-    }
-    else {
-      console.error('No se pudo finalizar sesión colaborativa. sessionId no existe');
-    }
-  }, [sessionId]);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const userNameFromQuery = searchParams.get('alias');
-    const roomIdFromQuery = searchParams.get('roomId');
-    const roomNameFromQuery = searchParams.get('roomName');
-    
-    if (userNameFromQuery) {
-      localStorage.setItem('userName', userNameFromQuery);
-      setUserName(userNameFromQuery);
-      
-      if (roomIdFromQuery) {
-        setRoomId(roomIdFromQuery);
-        setRoomName(roomNameFromQuery || roomIdFromQuery);
-        
-        // Inicializar YJS y SocketIOProvider
-        const yDoc = new Y.Doc();
-        const socketIOProvider = new SocketIOProvider(
-          yDoc,
-          roomIdFromQuery,
-          userNameFromQuery,
-          {
-            name: userNameFromQuery,
-            color: '#' + Math.floor(Math.random()*16777215).toString(16)
-          }
-        );
-        
-        setDoc(yDoc);
-        setProvider(socketIOProvider);
-        
-        obtenerReflexion(userNameFromQuery);
-        iniciarSesionColaborativa(roomIdFromQuery, roomNameFromQuery || 'Colaboración');
-      } else {
-        setError('No se proporcionó un ID de sala');
-      }
-    } else {
-      setError('No se proporcionó un nombre de usuario');
-    }
-    
-    setLoading(false);
-  }, []);
-
-  // Iniciar sesión colaborativa mediante API
-  const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
-    try {
-      const response = await fetch('/api/iniciar-sesion-colaborativa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_room, tema })
-      });
-      const data = await response.json();
-      setSessionId(data.id_sesion_colaborativa);
-    } catch (error) {
-      console.error('Error al iniciar sesión colaborativa:', error);
-    }
-  };
-
-  const obtenerReflexion = async (alias: string) => {
-    try {
-      const response = await fetch(`/api/obtener-reflexion?alias=${encodeURIComponent(alias)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setReflexion(data.reflexion);
-      } else if (response.status === 404) {
-        console.log('No se encontró reflexión para este usuario');
-        setReflexion(null);
-      } else {
-        console.error('Error al obtener la reflexión:', await response.text());
-      }
-    } catch (error) {
-      console.error('Error al obtener la reflexión:', error);
-    }
-  };
-  
-
-  useEffect(() => {
-    if (loading) return;
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
-    timerRef.current = setInterval(() => {
-      setTimeRemaining((prevTime) => {
-        if (prevTime <= 1) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
-          console.log('¡Se acabó el tiempo!');
-          finalizarSesionColaborativa();
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-    
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      
-      // Limpieza cuando se desmonta el componente
-      if (provider) {
-        provider.destroy();
-      }
-      if (doc) {
-        doc.destroy();
-      }
-    };
-  }, [loading, provider, doc, finalizarSesionColaborativa]);
-  
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
-
-  if (loading) return <Loading />;
-  if (error) return <div className={styles.error}>Error: {error}</div>;
-  if (!userName || !roomId) return <div className={styles.error}>Falta información necesaria (nombre de usuario o ID de sala)</div>;
-  if (!doc || !provider) return <div className={styles.loading}>Inicializando entorno colaborativo...</div>;
-
-  return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Fase de Discusión en Parejas</h1>
-      <p className={styles.timer}>Tiempo restante: {formatTime(timeRemaining)}</p>
-      
-      <div className={styles.instructionsContainer}>
-        <h2 className={styles.subtitle}>Instrucciones del Editor Colaborativo</h2>
-        <p className={styles.welcome}>
-          ¡Bienvenido al editor colaborativo, {userName}!
-        </p>
-        <ul className={styles.instructions}>
-          <li>En esta fase, trabajarás con un compañero para discutir y comparar sus reflexiones individuales sobre el tema de las redes sociales.</li>
-          <li>Utiliza el editor de texto compartido para escribir un resumen conjunto de sus ideas y conclusiones.</li>
-          <li>Puedes formatear el texto usando la barra de herramientas en la parte superior del editor.</li>
-          <li>Recuerda abordar las tres preguntas planteadas en la fase de reflexión individual.</li>
-          <li>Al final de esta fase, deberán tener un documento que refleje la síntesis de sus ideas.</li>
-        </ul>
-        <p className={styles.encouragement}>
-          ¡Aprovecha esta oportunidad para aprender de tu compañero y desarrollar una comprensión más profunda del tema!
-        </p>
-      </div>
-      
-      <div className={styles.reflexionContainer}>
-        <button 
-          onClick={() => setShowReflexion(!showReflexion)}
-          className={styles.reflexionToggle}
-        >
-          {showReflexion ? 'Ocultar' : 'Mostrar'} tu reflexión
-        </button>
-        {showReflexion && reflexion && (
-          <div className={styles.reflexionContent}>
-            <h3>Tu reflexión anterior:</h3>
-            <p>{reflexion}</p>
-          </div>
-        )}
-      </div>
-      
-      <div className={styles.chatContainer}>
-        <div className={styles.editorContainer}>
-          
-          {React.cloneElement(children as React.ReactElement, { provider, doc })}
-        </div>
-        
-        <div className={styles.chatAreaWrapper}>
-          <ChatArea 
-            systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
-            userName={userName}
-            roomId={roomId}
-          />
-        </div>
-      </div>
-      
-      {showPopup && (
-        <div className={styles.popupOverlay}>
-          <div className={styles.popup}>
-            <p>Gracias por participar en esta actividad y ayudar al avance de la ciencia. Espera las instrucciones del profesor.</p>
-            <button onClick={() => setShowPopup(false)}>Aceptar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}*/
 //esta es la ultima 25 mar
-'use client';
+/*'use client';
 
 import React, { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -671,7 +439,7 @@ export function Room({ children }: { children: ReactNode }) {
       
       <div className={styles.chatContainer}>
         <div className={styles.editorContainer}>
-          {/* Pasar provider y doc al componente editor */}
+          {}
           {React.cloneElement(children as React.ReactElement, { provider, doc })}
         </div>
         
@@ -688,6 +456,150 @@ export function Room({ children }: { children: ReactNode }) {
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
             <p>Gracias por participar en esta actividad y ayudar al avance de la ciencia. Espera las instrucciones del profesor.</p>
+            <button onClick={() => setShowPopup(false)}>Aceptar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}*/
+//la mas nueva 31 mar
+'use client';
+
+import React, { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import styles from './pairPage.module.css';
+import { Loading } from '@/components/Loading';
+import ChatArea from '../chat/components/Chatarea';
+import { useColabSession } from '../hooks/useColabSession';
+
+const CUSTOM_SYSTEM_INSTRUCTION = "Eres un asistente de investigación especializado en el impacto de las redes sociales en la sociedad. Ayuda a los estudiantes a reflexionar sobre los beneficios, desafíos y posibles soluciones relacionadas con las redes sociales, sin proporcionar respuestas directas. Fomenta el pensamiento crítico y la discusión.";
+
+export function Room({ children }: { children: ReactNode }) {
+  const [timeRemaining, setTimeRemaining] = useState(900); // 15 minutos
+  const [showPopup, setShowPopup] = useState(false);
+  const [showReflexion, setShowReflexion] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
+
+  const {
+    userName,
+    roomId,
+    roomName,
+    doc,
+    provider,
+    sessionId,
+    reflexion,
+    loading,
+    error
+  } = useColabSession();
+
+  const finalizarSesionColaborativa = useCallback(async () => {
+    if (sessionId) {
+      try {
+        await fetch('/api/finalizar-sesion-colaborativa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_sesion_colaborativa: sessionId })
+        });
+        console.log('Sesión colaborativa finalizada');
+        setShowPopup(true);
+        setTimeout(() => router.push('/share'), 3000);
+      } catch (error) {
+        console.error('Error al finalizar sesión colaborativa:', error);
+        setTimeout(() => router.push('/share'), 3000);
+      }
+    } else {
+      console.error('No se pudo finalizar sesión colaborativa. sessionId no existe');
+      setTimeout(() => router.push('/share'), 3000);
+    }
+  }, [sessionId, router]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          console.log('¡Se acabó el tiempo!');
+          finalizarSesionColaborativa();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (provider) provider.destroy();
+      if (doc) doc.destroy();
+    };
+  }, [loading, provider, doc, finalizarSesionColaborativa]);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  if (loading) return <Loading />;
+  if (error) return <div className={styles.error}>Error: {error}</div>;
+  if (!userName || !roomId) return <div className={styles.error}>Falta información necesaria (nombre de usuario o ID de sala).</div>;
+  if (!doc || !provider) return <div className={styles.loading}>Inicializando entorno colaborativo...</div>;
+
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.title}>Fase de Discusión en Parejas</h1>
+      <p className={styles.timer}>Tiempo restante: {formatTime(timeRemaining)}</p>
+
+      <div className={styles.instructionsContainer}>
+        <h2 className={styles.subtitle}>Instrucciones del Editor Colaborativo</h2>
+        <p className={styles.welcome}>¡Bienvenido al editor colaborativo, {userName}!</p>
+        <ul className={styles.instructions}>
+          <li>Trabaja con tu compañero para discutir sus reflexiones.</li>
+          <li>Escriban un resumen conjunto en el editor compartido.</li>
+          <li>Usa la barra de herramientas para formatear.</li>
+          <li>Responde las tres preguntas de la fase anterior.</li>
+          <li>El documento final debe reflejar sus ideas combinadas.</li>
+        </ul>
+        <p className={styles.encouragement}>¡Aprende de tu compañero y profundiza tu comprensión del tema!</p>
+      </div>
+
+      <div className={styles.reflexionContainer}>
+        <button onClick={() => setShowReflexion(!showReflexion)} className={styles.reflexionToggle}>
+          {showReflexion ? 'Ocultar' : 'Mostrar'} tu reflexión
+        </button>
+        {showReflexion && reflexion && (
+          <div className={styles.reflexionContent}>
+            <h3>Tu reflexión anterior:</h3>
+            <p>{reflexion}</p>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.chatContainer}>
+        <div className={styles.editorContainer}>
+          {React.cloneElement(children as React.ReactElement, { provider, doc })}
+        </div>
+
+        <div className={styles.chatAreaWrapper}>
+          <ChatArea 
+            systemInstruction={CUSTOM_SYSTEM_INSTRUCTION} 
+            userName={userName} 
+            roomId={roomId} 
+          />
+        </div>
+      </div>
+
+      {showPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popup}>
+            <p>Gracias por participar. Espera las instrucciones del profesor.</p>
             <button onClick={() => setShowPopup(false)}>Aceptar</button>
           </div>
         </div>
