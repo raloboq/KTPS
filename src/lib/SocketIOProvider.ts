@@ -611,7 +611,7 @@ fragment.observe(event => {
       }, 2000);
     }
   }*/
-    private onSyncDocument(update: any) {
+    /*private onSyncDocument(update: any) {
         try {
           console.log('Recibido estado inicial del documento', {
             tipo: typeof update,
@@ -661,7 +661,65 @@ fragment.observe(event => {
             }
           }, 2000);
         }
-      }
+      }*/
+        private onSyncDocument(update: any) {
+            try {
+              console.log('Recibido estado inicial del documento', {
+                tipo: typeof update,
+                esArray: Array.isArray(update),
+                esUint8Array: update instanceof Uint8Array,
+                esArrayBuffer: update instanceof ArrayBuffer,
+                constructor: update?.constructor?.name,
+                longitud: update?.length || update?.byteLength,
+                preview: update instanceof Uint8Array
+                  ? `Primeros bytes: ${Array.from(update.slice(0, 10))}`
+                  : 'No es Uint8Array'
+              });
+          
+              // 🧠 Conversión robusta a Uint8Array
+              if (Array.isArray(update)) {
+                update = new Uint8Array(update);
+              } else if (update instanceof ArrayBuffer) {
+                update = new Uint8Array(update);
+              } else if (typeof update === 'object' && update !== null && !(update instanceof Uint8Array)) {
+                const values = Object.values(update);
+                if (values.every(v => typeof v === 'number')) {
+                  update = new Uint8Array(values);
+                } else {
+                  throw new Error('❌ Formato inesperado de update');
+                }
+              }
+          
+              // 🚨 Validación final
+              if (!(update instanceof Uint8Array)) {
+                throw new Error('❌ Update recibido no es un Uint8Array válido');
+              }
+          
+              if (update.byteLength < 10) {
+                console.warn('⚠️ Documento recibido inválido o muy pequeño, creando uno nuevo');
+                Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(new Y.Doc()));
+                this.emit('synced', {});
+                return;
+              }
+          
+              // ✅ Aplicar el update
+              console.log('✅ Aplicando update convertido:', update.byteLength, 'bytes');
+              Y.applyUpdate(this.doc, update);
+              this.emit('synced', {});
+          
+            } catch (error) {
+              console.error('❌ Error al aplicar estado inicial:', error);
+              this.emit('error', { message: 'Error al sincronizar documento' });
+          
+              // 🕒 Reintento automático tras 2 segundos
+              setTimeout(() => {
+                if (this._connected) {
+                  console.log('🔁 Reintentando sincronización completa...');
+                  this.socket.emit('sync-request', this.documentId);
+                }
+              }, 2000);
+            }
+          }
 
   /*private onUpdate(update: Uint8Array) {
     try {
