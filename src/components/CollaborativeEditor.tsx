@@ -648,7 +648,7 @@ type EditorProps = {
   sessionId: number | null;
 };
 
-function ParticipantsBar({ provider }: { provider: SocketIOProvider }) {
+/*function ParticipantsBar({ provider }: { provider: SocketIOProvider }) {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -675,59 +675,97 @@ function ParticipantsBar({ provider }: { provider: SocketIOProvider }) {
       ))}
     </div>
   );
-}
+}*/
 
 function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
-  const userInfo = useMemo(() => ({
-    name: userName,
-    color: '#' + Math.floor(Math.random() * 16777215).toString(16),
-    picture: 'https://liveblocks.io/avatars/avatar-1.png'
-  }), [userName]);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ history: false }),
-      Collaboration.configure({
-        document: doc,
-        field: 'default',
-      }),
-      CollaborationCursor.configure({
-        provider,
-        user: userInfo,
-      }),
-    ],
-    editorProps: {
-      attributes: { class: styles.editor },
-    },
-  }, [doc, provider, userName]);
-
-  useEffect(() => {
-    const frag = doc.getXmlFragment('default');
-    frag.observeDeep((events) => {
-      console.log('🔍 XmlFragment modificado:', events);
-    });
-
-    return () => {
-      frag.unobserveDeep(() => {});
-    };
-  }, [doc]);
-
-  return (
-    <div className={styles.container}>
-      <ParticipantsBar provider={provider} />
-      <div className={styles.editorHeader}>
-        <Toolbar editor={editor} />
-        <div className={styles.statusIndicator}>
-          <span className={styles.statusDot}></span>
-          Colaborativo
+    const userInfo = useMemo(() => ({
+      name: userName,
+      color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+      picture: 'https://liveblocks.io/avatars/avatar-1.png'
+    }), [userName]);
+  
+    const editor = useEditor({
+      extensions: [
+        StarterKit.configure({ history: false }),
+        Collaboration.configure({
+          document: doc,
+          field: 'default',
+        }),
+        CollaborationCursor.configure({
+          provider,
+          user: userInfo,
+        }),
+      ],
+      editorProps: {
+        attributes: { class: styles.editor },
+      },
+    }, [doc, provider, userName]);
+  
+    // 👥 Estados de usuarios conectados
+    const [users, setUsers] = useState<{ name: string; color: string; picture?: string }[]>([]);
+  
+    useEffect(() => {
+      const awareness = provider.awareness;
+  
+      const updateUsers = () => {
+        const states = awareness.getStates();
+        const userList = Array.from(states.values())
+          .map((state: any) => state.user)
+          .filter(Boolean);
+        setUsers(userList);
+      };
+  
+      awareness.on('update', updateUsers);
+      updateUsers(); // inicial
+  
+      return () => {
+        awareness.off('update', updateUsers);
+      };
+    }, [provider]);
+  
+    // Observador de cambios
+    useEffect(() => {
+      const frag = doc.getXmlFragment('default');
+      frag.observeDeep((events) => {
+        console.log('🔍 XmlFragment modificado:', events);
+      });
+  
+      return () => {
+        frag.unobserveDeep(() => {});
+      };
+    }, [doc]);
+  
+    return (
+      <div className={styles.container}>
+        <div className={styles.editorHeader}>
+          <Toolbar editor={editor} />
+          <div className={styles.statusIndicator}>
+            <span className={styles.statusDot}></span>
+            Colaborativo
+          </div>
         </div>
+  
+        {/* 👥 Participantes conectados */}
+        <div className={styles.participantList}>
+          {users.length === 0 ? (
+            <span className={styles.noUsers}>Sin participantes activos</span>
+          ) : (
+            users.map((user, index) => (
+              <div key={index} className={styles.participant}>
+                <img src={user.picture} className={styles.avatar} alt={user.name} />
+                <span className={styles.userName} style={{ color: user.color }}>
+                  {user.name}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+  
+        {editor ? (
+          <EditorContent editor={editor} className={styles.editorContainer} />
+        ) : (
+          <div className={styles.loading}>Inicializando editor...</div>
+        )}
       </div>
-      {editor ? (
-        <EditorContent editor={editor} className={styles.editorContainer} />
-      ) : (
-        <div className={styles.loading}>Inicializando editor...</div>
-      )}
-    </div>
-  );
-}
-
+    );
+  }
