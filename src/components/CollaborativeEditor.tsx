@@ -434,7 +434,7 @@ type EditorProps = {
   sessionId: number | null;
 };
 
-function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+/*function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     
   const userInfo = useMemo(() => ({
     name: userName,
@@ -448,20 +448,7 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     return xml;
   }, [doc]);
 
-  /*const editor = useEditor({
-    editorProps: {
-      attributes: {
-        class: styles.editor,
-      },
-    },
-    extensions: [
-      StarterKit.configure({ history: false }),
-      Collaboration.configure({ document: fragment }),
-      CollaborationCursor.configure({ provider, user: userInfo }),
-    ],
-  });*/
-
-  // 🧪 Agrega este bloque para debug
+  
   useEffect(() => {
     const handler = (update: Uint8Array, origin: any) => {
       console.log('🧪 DEBUG DIRECTO: update en doc. Origin:', origin);
@@ -489,20 +476,7 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     }
   }, [doc]);
 
-  /*const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ history: false }),
-      Collaboration.configure({
-        document: doc, // ✅ PASA EL Y.Doc, no XmlFragment
-        field: 'default', // ✅ para que use getXmlFragment('default')
-      }),
-      CollaborationCursor.configure({
-        provider,
-        user: userInfo,
-      }),
-    ],
-    editorProps: { attributes: { class: styles.editor } },
-  });*/
+ 
   const editor = useMemo(() => {
     return useEditor({
       extensions: [
@@ -524,7 +498,7 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
 
   console.log('🧪 Tiptap editor creado:', editor);
   console.log('🧠 Editor montado:', editor?.getJSON());
-console.log('📍 Awareness:', provider?.awareness?.getLocalState());
+  console.log('📍 Awareness:', provider?.awareness?.getLocalState());
 
 useEffect(() => {
     const frag = doc.getXmlFragment('default');
@@ -547,4 +521,56 @@ useEffect(() => {
       <EditorContent editor={editor} className={styles.editorContainer} />
     </div>
   );
-}
+}*/
+function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+    const userInfo = useMemo(() => ({
+      name: userName,
+      color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+      picture: 'https://liveblocks.io/avatars/avatar-1.png'
+    }), [userName]);
+  
+    const editor = useEditor({
+      extensions: [
+        StarterKit.configure({ history: false }),
+        Collaboration.configure({
+          document: doc,
+          field: 'default',
+        }),
+        CollaborationCursor.configure({
+          provider,
+          user: userInfo,
+        }),
+      ],
+      editorProps: {
+        attributes: { class: styles.editor },
+      },
+    }, [doc, provider, userName]);
+  
+    useEffect(() => {
+      const frag = doc.getXmlFragment('default');
+      frag.observeDeep((events) => {
+        console.log('🔍 XmlFragment modificado:', events);
+      });
+  
+      return () => {
+        frag.unobserveDeep(() => {});
+      };
+    }, [doc]);
+  
+    return (
+      <div className={styles.container}>
+        <div className={styles.editorHeader}>
+          <Toolbar editor={editor} />
+          <div className={styles.statusIndicator}>
+            <span className={styles.statusDot}></span>
+            Colaborativo
+          </div>
+        </div>
+        {editor ? (
+          <EditorContent editor={editor} className={styles.editorContainer} />
+        ) : (
+          <div className={styles.loading}>Inicializando editor...</div>
+        )}
+      </div>
+    );
+  }
