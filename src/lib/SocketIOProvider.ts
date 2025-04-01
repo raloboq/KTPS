@@ -496,13 +496,13 @@ export class SocketIOProvider {
       
       // Escuchar cambios locales del documento
       doc.on('update', this.onDocumentUpdate.bind(this));
-      
+
       const fragment = doc.getXmlFragment('default');
 fragment.observe(event => {
   const update = Y.encodeStateAsUpdate(doc);
   console.log('🆕 Cambio detectado en fragmento XML, enviando update:', update.byteLength, 'bytes');
   if (this._connected) {
-    this.socket.emit('sync-update', update);
+    this.socket.emit('sync-update', Array.from(update));
   }
 });
       
@@ -663,7 +663,7 @@ fragment.observe(event => {
         }
       }
 
-  private onUpdate(update: Uint8Array) {
+  /*private onUpdate(update: Uint8Array) {
     try {
       console.log('Recibida actualización del documento');
       Y.applyUpdate(this.doc, update);
@@ -674,14 +674,29 @@ fragment.observe(event => {
       // Solicitar documento completo en caso de error
       this.sync();
     }
-  }
+  }*/
+    private onUpdate(update: any) {
+        try {
+          console.log('[SOCKET EVENT] sync-update', update);
+      
+          if (Array.isArray(update)) {
+            update = new Uint8Array(update);
+          }
+      
+          Y.applyUpdate(this.doc, update);
+        } catch (error) {
+          console.error('Error al aplicar actualización:', error);
+          this.emit('error', { message: 'Error al aplicar actualización' });
+          this.sync(); // Pedir documento completo en caso de error
+        }
+      }
 
   private onDocumentUpdate(update: Uint8Array, origin: any) {
     console.log('⚙️ onDocumentUpdate ejecutado. Origin:', origin);
     if (this._connected) {
-        console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
-        this.socket.emit('sync-update', update);
-      }
+  console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
+  this.socket.emit('sync-update', Array.from(update));
+}
     // Solo enviar actualizaciones que no vinieron del servidor
     if (origin !== this && this._connected) {
         console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
