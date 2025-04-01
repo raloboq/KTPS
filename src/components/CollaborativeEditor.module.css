@@ -13,52 +13,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.editor {
-  border-radius: inherit;
-  flex-grow: 1;
-  width: 100%;
-  height: 100%;
-  padding: 1rem;
-}
-
-.editor:focus {
-  outline: none;
-}
-
-.editorContainer {
-  position: relative;
-  height: 100%;
-}
-
-.placeholder {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  opacity: 0.3;
-  padding: 0 1em;
-}
-
-.editor p {
-  margin: 1em 0;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  border-radius: 12px;
-  background: #fff;
-  width: 100%;
-  height: 100%;
-  color: #111827;
-}
-
-.editorHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -127,6 +81,39 @@
   padding: 0 0.75rem;
   font-size: 14px;
   color: #6b7280;
+}
+
+/* 🧑‍🤝‍🧑 PARTICIPANTS BAR */
+.participantsBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #f4f4f4;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ddd;
+  border-radius: 12px;
+  margin: 0.5rem 0 1rem 0;
+  overflow-x: auto;
+}
+
+.participant {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
 }
 
 /* Estilos para los cursores de colaboración */

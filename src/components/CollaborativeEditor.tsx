@@ -276,7 +276,9 @@ function SimpleTiptapEditor({ doc, provider, userName, sessionId }: EditorProps)
 
 // src/components/CollaborativeEditor.tsx
 
-"use client";
+
+//funciona!!!! 31 marz pero le falta lo cosmetico 
+/*"use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -434,94 +436,7 @@ type EditorProps = {
   sessionId: number | null;
 };
 
-/*function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
-    
-  const userInfo = useMemo(() => ({
-    name: userName,
-    color: '#' + Math.floor(Math.random()*16777215).toString(16),
-    picture: 'https://liveblocks.io/avatars/avatar-1.png'
-  }), [userName]);
 
-  const fragment = useMemo(() => {
-    const xml = doc.getXmlFragment('default');
-    console.log('✅ Fragmento XML recuperado:', xml);
-    return xml;
-  }, [doc]);
-
-  
-  useEffect(() => {
-    const handler = (update: Uint8Array, origin: any) => {
-      console.log('🧪 DEBUG DIRECTO: update en doc. Origin:', origin);
-    };
-    doc.on('update', handler);
-    return () => {
-      doc.off('update', handler);
-    };
-  }, [doc]);
-
-  useEffect(() => {
-    if (doc) {
-      const fragment = doc.getXmlFragment('default');
-  
-      if (fragment.length === 0) {
-        const paragraph = new Y.XmlElement('p');
-        const textNode = new Y.XmlText();
-        textNode.insert(0, 'Prueba de contenido');
-  
-        paragraph.insert(0, [textNode]);
-        fragment.insert(0, [paragraph]);
-  
-        console.log('🌟 Fragmento inicial con <p> insertado');
-      }
-    }
-  }, [doc]);
-
- 
-  const editor = useMemo(() => {
-    return useEditor({
-      extensions: [
-        StarterKit.configure({ history: false }),
-        Collaboration.configure({
-          document: doc,
-          field: 'default',
-        }),
-        CollaborationCursor.configure({
-          provider,
-          user: userInfo,
-        }),
-      ],
-      editorProps: {
-        attributes: { class: styles.editor },
-      },
-    });
-  }, [doc, provider, userInfo]);
-
-  console.log('🧪 Tiptap editor creado:', editor);
-  console.log('🧠 Editor montado:', editor?.getJSON());
-  console.log('📍 Awareness:', provider?.awareness?.getLocalState());
-
-useEffect(() => {
-    const frag = doc.getXmlFragment('default');
-    frag.observeDeep((events) => {
-      console.log('🔍 XmlFragment modificado:', events);
-    });
-  }, [doc]);
-
-  
-
-  return (
-    <div className={styles.container}>
-      <div className={styles.editorHeader}>
-        <Toolbar editor={editor} />
-        <div className={styles.statusIndicator}>
-          <span className={styles.statusDot}></span>
-          Colaborativo
-        </div>
-      </div>
-      <EditorContent editor={editor} className={styles.editorContainer} />
-    </div>
-  );
-}*/
 function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     const userInfo = useMemo(() => ({
       name: userName,
@@ -573,4 +488,246 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
         )}
       </div>
     );
-  }
+  }*/
+
+    "use client";
+
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import * as Y from "yjs";
+import { SocketIOProvider } from "@/lib/SocketIOProvider";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { Toolbar } from "./Toolbar";
+import styles from "./CollaborativeEditor.module.css";
+import ConnectionStatus from "./ConnectionStatus";
+
+export function CollaborativeEditor({ 
+  documentId, 
+  userName, 
+  roomName,
+  provider,
+  doc
+}: { 
+  documentId?: string; 
+  userName?: string; 
+  roomName?: string;
+  provider?: SocketIOProvider;
+  doc?: Y.Doc;
+}) {
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('connected');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showReconnectMessage, setShowReconnectMessage] = useState(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [localDoc, setLocalDoc] = useState<Y.Doc | null>(null);
+  const [localProvider, setLocalProvider] = useState<SocketIOProvider | null>(null);
+
+  const actualDoc = doc || localDoc;
+  const actualProvider = provider || localProvider;
+
+  useEffect(() => {
+    if (!provider && !doc && documentId && userName) {
+      const yDoc = new Y.Doc();
+      const xmlFragment = yDoc.getXmlFragment("default");
+      const xmlText = new Y.XmlText();
+      xmlText.insert(0, "Documento colaborativo nuevo");
+      xmlFragment.insert(0, [xmlText]);
+
+      const socketProvider = new SocketIOProvider(
+        yDoc,
+        documentId,
+        userName,
+        {
+          name: userName,
+          color: '#' + Math.floor(Math.random()*16777215).toString(16),
+          picture: 'https://liveblocks.io/avatars/avatar-1.png'
+        }
+      );
+
+      setLocalDoc(yDoc);
+      setLocalProvider(socketProvider);
+
+      socketProvider.on('status', (status: { connected: boolean, reason?: string }) => {
+        setConnectionStatus(status.connected ? 'connected' : 'disconnected');
+        if (!status.connected) {
+          setErrorMessage(`Desconectado: ${status.reason || 'Error de conexión'}`);
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => setShowReconnectMessage(true), 10000);
+        } else {
+          setErrorMessage(null);
+          setShowReconnectMessage(false);
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        }
+      });
+
+      socketProvider.on('error', (error: { message: string }) => {
+        setErrorMessage(error.message);
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => setShowReconnectMessage(true), 5000);
+      });
+
+      iniciarSesionColaborativa(documentId, roomName || 'Colaboración en Documento');
+
+      return () => {
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        socketProvider.destroy();
+        yDoc.destroy();
+      };
+    }
+  }, [documentId, userName, roomName, provider, doc]);
+
+  const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
+    try {
+      const response = await fetch('/api/iniciar-sesion-colaborativa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_room, tema })
+      });
+      const data = await response.json();
+      setSessionId(data.id_sesion_colaborativa);
+    } catch (error) {
+      setErrorMessage('Error al iniciar sesión colaborativa');
+    }
+  };
+
+  const handleReconnect = useCallback(() => {
+    if (actualProvider && typeof actualProvider.reconnect === 'function') {
+      actualProvider.reconnect();
+      setShowReconnectMessage(false);
+      setErrorMessage('Intentando reconexión...');
+      setTimeout(() => {
+        if (errorMessage === 'Intentando reconexión...') setErrorMessage(null);
+      }, 3000);
+    } else {
+      setErrorMessage('No se pudo reconectar. Intenta recargar la página.');
+    }
+  }, [actualProvider, errorMessage]);
+
+  useEffect(() => {
+    if (!editorReady && actualDoc && actualProvider) {
+      setEditorReady(true);
+    }
+  }, [actualDoc, actualProvider, editorReady]);
+
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, []);
+
+  if (!editorReady) return <div className={styles.loading}>Cargando editor colaborativo...</div>;
+
+  return (
+    <>
+      {errorMessage && (
+        <ConnectionStatus 
+          connected={connectionStatus === 'connected'}
+          errorMessage={errorMessage}
+          showReconnect={showReconnectMessage}
+          onReconnect={handleReconnect}
+        />
+      )}
+      <XmlTiptapEditor 
+        doc={actualDoc!} 
+        provider={actualProvider!} 
+        userName={userName || 'Usuario anónimo'} 
+        sessionId={sessionId} 
+      />
+    </>
+  );
+}
+
+type EditorProps = {
+  doc: Y.Doc;
+  provider: SocketIOProvider;
+  userName: string;
+  sessionId: number | null;
+};
+
+function ParticipantsBar({ provider }: { provider: SocketIOProvider }) {
+  const [users, setUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const updateUsers = () => {
+      const states = Array.from(provider.awareness.getStates().values());
+      setUsers(states.map((s: any) => s.user));
+    };
+
+    provider.awareness.on('update', updateUsers);
+    updateUsers();
+
+    return () => {
+      provider.awareness.off('update', updateUsers);
+    };
+  }, [provider]);
+
+  return (
+    <div className={styles.participantsBar}>
+      {users.map((user, idx) => (
+        <div key={idx} className={styles.participant}>
+          <img src={user.picture} alt={user.name} className={styles.avatar} />
+          <span style={{ color: user.color }}>{user.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
+  const userInfo = useMemo(() => ({
+    name: userName,
+    color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+    picture: 'https://liveblocks.io/avatars/avatar-1.png'
+  }), [userName]);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ history: false }),
+      Collaboration.configure({
+        document: doc,
+        field: 'default',
+      }),
+      CollaborationCursor.configure({
+        provider,
+        user: userInfo,
+      }),
+    ],
+    editorProps: {
+      attributes: { class: styles.editor },
+    },
+  }, [doc, provider, userName]);
+
+  useEffect(() => {
+    const frag = doc.getXmlFragment('default');
+    frag.observeDeep((events) => {
+      console.log('🔍 XmlFragment modificado:', events);
+    });
+
+    return () => {
+      frag.unobserveDeep(() => {});
+    };
+  }, [doc]);
+
+  return (
+    <div className={styles.container}>
+      <ParticipantsBar provider={provider} />
+      <div className={styles.editorHeader}>
+        <Toolbar editor={editor} />
+        <div className={styles.statusIndicator}>
+          <span className={styles.statusDot}></span>
+          Colaborativo
+        </div>
+      </div>
+      {editor ? (
+        <EditorContent editor={editor} className={styles.editorContainer} />
+      ) : (
+        <div className={styles.loading}>Inicializando editor...</div>
+      )}
+    </div>
+  );
+}
+
