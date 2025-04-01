@@ -669,16 +669,14 @@ export class SocketIOProvider {
   private onDocumentUpdate(update: Uint8Array, origin: any) {
     // Solo enviar actualizaciones que no vinieron del servidor
     if (origin !== this && this._connected) {
-      //try {
         console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
         this.socket.emit('sync-update', update);
-      //} catch (error) {
-      //  console.error('Error al enviar actualización:', error);
-      //}
-    }
-    else{
-        console.log('🔄 Update recibido del servidor o no conectado, no reenviar');
-    }
+      } else if (!this._connected) {
+        console.log('🔴 No conectado, no se envía update');
+      } else {
+        console.log('📦 Update con origin indefinido o esperado, igual se envía');
+        this.socket.emit('sync-update', update);
+      }
   }
 
   private onCursorUpdate(data: {socketId: string, userName: string, cursor: CursorPosition}) {
