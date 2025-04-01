@@ -489,24 +489,38 @@ function XmlTiptapEditor({ doc, provider, userName, sessionId }: EditorProps) {
     }
   }, [doc]);
 
-  const editor = useEditor({
+  /*const editor = useEditor({
     extensions: [
       StarterKit.configure({ history: false }),
       Collaboration.configure({
         document: doc, // ✅ PASA EL Y.Doc, no XmlFragment
         field: 'default', // ✅ para que use getXmlFragment('default')
       }),
-      /*Collaboration.configure({
-        document: doc.getXmlFragment('default'),
-        field: 'default',
-      }),*/
       CollaborationCursor.configure({
         provider,
         user: userInfo,
       }),
     ],
     editorProps: { attributes: { class: styles.editor } },
-  });
+  });*/
+  const editor = useMemo(() => {
+    return useEditor({
+      extensions: [
+        StarterKit.configure({ history: false }),
+        Collaboration.configure({
+          document: doc,
+          field: 'default',
+        }),
+        CollaborationCursor.configure({
+          provider,
+          user: userInfo,
+        }),
+      ],
+      editorProps: {
+        attributes: { class: styles.editor },
+      },
+    });
+  }, [doc, provider, userInfo]);
 
   console.log('🧪 Tiptap editor creado:', editor);
   console.log('🧠 Editor montado:', editor?.getJSON());
