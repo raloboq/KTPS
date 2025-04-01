@@ -496,6 +496,16 @@ export class SocketIOProvider {
       
       // Escuchar cambios locales del documento
       doc.on('update', this.onDocumentUpdate.bind(this));
+      
+      const fragment = doc.getXmlFragment('default');
+fragment.observe(event => {
+  const update = Y.encodeStateAsUpdate(doc);
+  console.log('🆕 Cambio detectado en fragmento XML, enviando update:', update.byteLength, 'bytes');
+  if (this._connected) {
+    this.socket.emit('sync-update', update);
+  }
+});
+      
     } catch (error) {
       console.error('Error al inicializar Socket.IO:', error);
       this.emit('error', { message: 'Error al inicializar Socket.IO' });
@@ -667,6 +677,11 @@ export class SocketIOProvider {
   }
 
   private onDocumentUpdate(update: Uint8Array, origin: any) {
+    console.log('⚙️ onDocumentUpdate ejecutado. Origin:', origin);
+    if (this._connected) {
+        console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
+        this.socket.emit('sync-update', update);
+      }
     // Solo enviar actualizaciones que no vinieron del servidor
     if (origin !== this && this._connected) {
         console.log('💌 Enviando update al servidor, tamaño:', update.byteLength);
