@@ -495,9 +495,20 @@ export class SocketIOProvider {
       });
       
       // Escuchar cambios locales del documento
-      doc.on('update', this.onDocumentUpdate.bind(this));
+      //doc.on('update', this.onDocumentUpdate.bind(this));
 
       const fragment = doc.getXmlFragment('default');
+
+fragment.observeDeep(() => {
+  const update = Y.encodeStateAsUpdateV2(doc); // ✅ omitimos transaction
+  console.log('🆕 Cambio detectado en fragmento XML, enviando update:', update.byteLength, 'bytes');
+  
+  if (this._connected) {
+    this.socket.emit('sync-update', Array.from(update));
+  }
+});
+
+      //const fragment = doc.getXmlFragment('default');
 fragment.observe(event => {
   const update = Y.encodeStateAsUpdate(doc);
   console.log('🆕 Cambio detectado en fragmento XML, enviando update:', update.byteLength, 'bytes');
@@ -575,93 +586,6 @@ fragment.observe(event => {
   private onPong(data: any) {
     console.log('Pong recibido del servidor:', data.timestamp);
   }
-
-  /*private onSyncDocument(update: any) {
-    try {
-        console.log('Recibido estado inicial del documento:', {
-            type: typeof update,
-            isArray: Array.isArray(update),
-            isUint8Array: update instanceof Uint8Array,
-            constructor: update.constructor.name,
-            length: update.length || update.byteLength,
-            preview: update instanceof Uint8Array ? 
-              `Primeros bytes: ${Array.from(update.slice(0, 10))}` : 
-              'No es Uint8Array'
-          });
-          
-          // Si no es un Uint8Array, convertirlo
-          if (!(update instanceof Uint8Array)) {
-            if (Array.isArray(update)) {
-              update = new Uint8Array(update);
-            } else {
-              throw new Error(`Formato inesperado: ${typeof update}`);
-            }
-          }
-      Y.applyUpdate(this.doc, update);
-      this.emit('synced', {});
-    } catch (error) {
-      console.error('Error al aplicar estado inicial:', error);
-      this.emit('error', { message: 'Error al sincronizar documento' });
-      
-      // Intentar solicitar de nuevo el documento en caso de error
-      setTimeout(() => {
-        if (this._connected) {
-          this.socket.emit('sync-request', this.documentId);
-        }
-      }, 2000);
-    }
-  }*/
-    /*private onSyncDocument(update: any) {
-        try {
-          console.log('Recibido estado inicial del documento', {
-            tipo: typeof update,
-            esArray: Array.isArray(update),
-            esUint8Array: update instanceof Uint8Array,
-            esArrayBuffer: update instanceof ArrayBuffer,
-            constructor: update?.constructor?.name,
-            longitud: update?.length || update?.byteLength
-          });
-          
-          // Si recibimos un ArrayBuffer, convertirlo a Uint8Array
-          if (update instanceof ArrayBuffer) {
-            update = new Uint8Array(update);
-          } 
-          // Si recibimos un objeto que parece un array pero no es Uint8Array
-          else if (typeof update === 'object' && update !== null && !Array.isArray(update) && !(update instanceof Uint8Array)) {
-            // Verificar si tiene propiedades numéricas (parece un array)
-            const hasNumericProps = Object.keys(update).some(key => !isNaN(Number(key)));
-            if (hasNumericProps) {
-              // Convertir objeto similar a array en Uint8Array
-              update = new Uint8Array(Object.values(update));
-            }
-          }
-          
-          // Verificar que tenemos un Uint8Array con datos suficientes
-          if (!(update instanceof Uint8Array) || update.byteLength < 10) {
-            console.warn('Documento recibido inválido o vacío, creando uno nuevo');
-            
-            // En lugar de fallar, inicializar un documento vacío
-            Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(new Y.Doc()));
-            this.emit('synced', {});
-            return;
-          }
-          
-          console.log('Aplicando update convertido:', update.byteLength, 'bytes');
-          Y.applyUpdate(this.doc, update);
-          this.emit('synced', {});
-        } catch (error) {
-          console.error('Error al aplicar estado inicial:', error);
-          this.emit('error', { message: 'Error al sincronizar documento' });
-          
-          // Solicitar de nuevo después de un retraso
-          setTimeout(() => {
-            if (this._connected) {
-              console.log('Reintentando sincronización...');
-              this.socket.emit('sync-request', this.documentId);
-            }
-          }, 2000);
-        }
-      }*/
         private onSyncDocument(update: any) {
             try {
               console.log('Recibido estado inicial del documento', {
@@ -721,18 +645,6 @@ fragment.observe(event => {
             }
           }
 
-  /*private onUpdate(update: Uint8Array) {
-    try {
-      console.log('Recibida actualización del documento');
-      Y.applyUpdate(this.doc, update);
-    } catch (error) {
-      console.error('Error al aplicar actualización:', error);
-      this.emit('error', { message: 'Error al aplicar actualización' });
-      
-      // Solicitar documento completo en caso de error
-      this.sync();
-    }
-  }*/
     private onUpdate(update: any) {
         try {
           console.log('[SOCKET EVENT] sync-update', update);
