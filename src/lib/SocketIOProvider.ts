@@ -684,7 +684,7 @@ fragment.observe(event => {
               } else if (typeof update === 'object' && update !== null && !(update instanceof Uint8Array)) {
                 const values = Object.values(update);
                 if (values.every(v => typeof v === 'number')) {
-                  update = new Uint8Array(values);
+                    update = new Uint8Array(values as number[]);
                 } else {
                   throw new Error('❌ Formato inesperado de update');
                 }
