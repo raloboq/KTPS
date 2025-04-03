@@ -358,19 +358,19 @@ export default function CourseSelectPage() {
     }
 
     // Guardar la selección en cookies para usarla en el panel de administración
-    Cookies.set('selectedCourseId', selectedCourseId.toString(), { secure: true, sameSite: 'strict' });
-    Cookies.set('selectedAssignmentId', selectedAssignmentId.toString(), { secure: true, sameSite: 'strict' });
+    Cookies.set('selectedCourseId', selectedCourseId.toString(), { secure: false, sameSite: 'strict' });
+    Cookies.set('selectedAssignmentId', selectedAssignmentId.toString(), { secure: false, sameSite: 'strict' });
     
     // Encontrar y guardar el nombre del curso y la actividad para mostrarlos en el panel
     const selectedCourse = courses.find(course => course.id === selectedCourseId);
     const selectedAssignment = assignments.find(assignment => assignment.id === selectedAssignmentId);
     
     if (selectedCourse) {
-      Cookies.set('selectedCourseName', selectedCourse.fullname || selectedCourse.displayname || selectedCourse.shortname, { secure: true, sameSite: 'strict' });
+      Cookies.set('selectedCourseName', selectedCourse.fullname || selectedCourse.displayname || selectedCourse.shortname, { secure: false, sameSite: 'strict' });
     }
     
     if (selectedAssignment) {
-      Cookies.set('selectedAssignmentName', selectedAssignment.name, { secure: true, sameSite: 'strict' });
+      Cookies.set('selectedAssignmentName', selectedAssignment.name, { secure: false, sameSite: 'strict' });
     }
 
     // Redirigir al panel de administración
