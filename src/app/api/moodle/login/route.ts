@@ -43,6 +43,8 @@ export async function POST(request: Request) {
     loginUrl.searchParams.append('password', password);
     loginUrl.searchParams.append('service', service);
 
+    console.log("login url",loginUrl );
+
     // Realizar la petición a Moodle
     const response = await fetch(loginUrl.toString(), {
       method: 'POST',
