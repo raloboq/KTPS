@@ -262,11 +262,13 @@ export default function CourseSelectPage() {
   // Obtener el nombre del usuario de forma segura (client-side only)
   useEffect(() => {
     setUserName(Cookies.get('moodleFullName') || null);
+    console.log('username',userName);
   }, []);
 
   // Cargar los cursos al iniciar la página
   useEffect(() => {
     const fetchCourses = async () => {
+      console.log('primero');
       try {
         console.log('Fetching courses...');
         const response = await fetch('/api/moodle/get-courses', {

@@ -74,7 +74,7 @@ export default function LoginPage() {
         
         // Guardar el ID de usuario de Moodle en las cookies
         Cookies.set('moodleUserId', userData.id.toString(), { secure: true, sameSite: 'strict' });
-        
+        console.log(loginData.token,' ',username,' ',email,' ',userData.fullname,' ',userData.id.toString());
         // Redirigir a la página de selección de curso
         router.push('/course-select');
       } else {
