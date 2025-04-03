@@ -81,7 +81,7 @@ async function getUserId(token: string): Promise<number | null> {
       wsfunction: 'core_webservice_get_site_info',
       moodlewsrestformat: 'json'
     });
-    console.log('URL de consulta site_info:', `${apiUrl}?${params.toString()}`);
+    //console.log('URL de consulta site_info:', `${apiUrl}?${params.toString()}`);
     const response = await fetch(`${apiUrl}?${params.toString()}`);
     
     if (!response.ok) {
