@@ -57,6 +57,7 @@ export default function LoginPage() {
       });
 
       const loginData = await loginResponse.json();
+      console.log("response1",loginData);
 
       if (loginData.error) {
         throw new Error(loginData.error);
