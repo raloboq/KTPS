@@ -4,7 +4,7 @@
  */
 
 // Activar/desactivar modo demostración
-export const IS_DEMO_MODE = true; // Cambiar a false cuando se conecte a Moodle real
+export const IS_DEMO_MODE = false; // Cambiar a false cuando se conecte a Moodle real
 
 // Datos de muestra de estudiantes
 export const demoStudents = [
