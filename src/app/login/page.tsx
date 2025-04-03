@@ -65,15 +65,15 @@ export default function LoginPage() {
 
       if (loginData.token) {
         // Guardar el token en una cookie
-        Cookies.set('moodleToken', loginData.token, { secure: true, sameSite: 'strict' });
+        Cookies.set('moodleToken', loginData.token, { secure: false, sameSite: 'strict' });
         
         // Guardar el username y email para saber qué profesor está logueado
-        Cookies.set('moodleUsername', username, { secure: true, sameSite: 'strict' });
-        Cookies.set('moodleEmail', email, { secure: true, sameSite: 'strict' });
-        Cookies.set('moodleFullName', userData.fullname || `${userData.firstname} ${userData.lastname}`, { secure: true, sameSite: 'strict' });
+        Cookies.set('moodleUsername', username, { secure: false, sameSite: 'strict' });
+        Cookies.set('moodleEmail', email, { secure: false, sameSite: 'strict' });
+        Cookies.set('moodleFullName', userData.fullname || `${userData.firstname} ${userData.lastname}`, { secure: false, sameSite: 'strict' });
         
         // Guardar el ID de usuario de Moodle en las cookies
-        Cookies.set('moodleUserId', userData.id.toString(), { secure: true, sameSite: 'strict' });
+        Cookies.set('moodleUserId', userData.id.toString(), { secure: false, sameSite: 'strict' });
         console.log(loginData.token,' ',username,' ',email,' ',userData.fullname,' ',userData.id.toString());
         // Redirigir a la página de selección de curso
         router.push('/course-select');
