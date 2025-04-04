@@ -255,6 +255,26 @@ export async function GET(
     
     const userId = parseInt(userIdStr);
 
+    const fullQuery = `
+      SELECT 
+        tc.*, 
+        mc.name as course_name, 
+        ma.name as assignment_name
+      FROM 
+        tps_configurations tc
+      LEFT JOIN 
+        moodle_courses mc ON tc.moodle_course_id = mc.moodle_course_id
+      LEFT JOIN 
+        moodle_assignments ma ON tc.moodle_assignment_id = ma.moodle_assignment_id
+      WHERE 
+        tc.id = $1
+        AND tc.moodle_user_id = $2`;
+    
+    console.log('Consulta completa:', {
+      query: fullQuery,
+      params: [id, userId]
+    });
+
     // Obtener la configuración junto con datos del curso y la asignación
     const result: QueryResult = await pool.query(
       `SELECT 
@@ -278,7 +298,7 @@ export async function GET(
       
       return NextResponse.json({ 
         success: false, 
-        error: 'Configuración no encontrada' 
+        error: 'Configuración no encontradaaaaaaa' 
       }, { status: 404 });
     }
 
