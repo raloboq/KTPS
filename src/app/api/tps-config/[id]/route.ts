@@ -298,7 +298,7 @@ export async function GET(
       
       return NextResponse.json({ 
         success: false, 
-        error: 'Configuración no encontradaaaaaaa' 
+        error: 'Configuración no encontradaaaaaaa'+id+'   '+userId
       }, { status: 404 });
     }
 
