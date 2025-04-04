@@ -293,7 +293,7 @@ export async function GET(
       [id, userId]
     );
 
-    if (!result.rowCount || result.rowCount === 0) {
+    if (result.rowCount === 0) {
       console.log('Error: No se encontraron datos con la consulta JOIN completa');
       
       return NextResponse.json({ 
