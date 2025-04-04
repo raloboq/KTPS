@@ -402,7 +402,7 @@ export async function PUT(
 
     let result: QueryResult;
 
-    if (existingActivity.rowCount > 0) {
+    if (existingActivity && existingActivity.rowCount && existingActivity.rowCount > 0) {
       // Actualizar la actividad existente
       result = await client.query(
         `UPDATE available_activities 
@@ -436,7 +436,7 @@ export async function PUT(
           configId, 
           data.name, 
           data.description, 
-          data.is_active && config.is_active, // Solo puede estar activa si la config también lo está
+          data.is_active && config.is_active,
           data.start_date, 
           data.end_date
         ]

@@ -215,7 +215,7 @@ export async function PUT(
       let activityName = "Actividad TPS";
       let activityDescription = "Actividad colaborativa Think-Pair-Share";
       
-      if (courseAssignmentInfo.rowCount > 0) {
+      if (courseAssignmentInfo && courseAssignmentInfo.rowCount && courseAssignmentInfo.rowCount > 0) {
         const { course_name, assignment_name } = courseAssignmentInfo.rows[0];
         activityName = `TPS: ${assignment_name}`;
         activityDescription = `Actividad colaborativa Think-Pair-Share para ${course_name}: ${assignment_name}`;
@@ -232,7 +232,7 @@ export async function PUT(
         [id]
       );
       
-      if (existingActivity.rowCount > 0) {
+      if (existingActivity && existingActivity.rowCount && existingActivity.rowCount > 0) {
         // Actualizar la actividad existente
         await client.query(
           `UPDATE available_activities 
