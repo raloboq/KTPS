@@ -101,6 +101,7 @@ export async function PUT(
   }
 }*/
 // src/app/api/tps-config/[id]/toggle-status/route.ts
+// src/app/api/tps-config/[id]/toggle-status/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
@@ -150,7 +151,14 @@ export async function PUT(
       `SELECT 
         id, 
         moodle_course_id, 
-        moodle_assignment_id 
+        moodle_assignment_id,
+        think_phase_instructions,
+        think_phase_duration,
+        pair_phase_duration,
+        pair_phase_instructions,
+        share_phase_duration,
+        share_phase_instructions,
+        system_prompt
       FROM 
         tps_configurations 
       WHERE 
@@ -184,6 +192,77 @@ export async function PUT(
            AND id != $4
            AND is_active = TRUE`,
         [userId, config.moodle_course_id, config.moodle_assignment_id, id]
+      );
+      
+      // Cuando activamos una configuración, crear o actualizar entrada en available_activities
+      
+      // Primero, obtener información sobre el curso y la asignación para crear un nombre adecuado
+      const courseAssignmentInfo = await client.query(
+        `SELECT 
+           c.name as course_name, 
+           a.name as assignment_name 
+         FROM 
+           moodle_courses c 
+         JOIN 
+           moodle_assignments a ON c.moodle_course_id = a.moodle_course_id 
+         WHERE 
+           c.moodle_course_id = $1 
+           AND a.moodle_assignment_id = $2`,
+        [config.moodle_course_id, config.moodle_assignment_id]
+      );
+      
+      // Crear un nombre descriptivo para la actividad
+      let activityName = "Actividad TPS";
+      let activityDescription = "Actividad colaborativa Think-Pair-Share";
+      
+      if (courseAssignmentInfo.rowCount > 0) {
+        const { course_name, assignment_name } = courseAssignmentInfo.rows[0];
+        activityName = `TPS: ${assignment_name}`;
+        activityDescription = `Actividad colaborativa Think-Pair-Share para ${course_name}: ${assignment_name}`;
+      }
+      
+      // Generar fechas por defecto (desde ahora hasta 30 días en el futuro)
+      const now = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+      
+      // Verificar si ya existe una entrada para esta configuración en available_activities
+      const existingActivity = await client.query(
+        `SELECT id FROM available_activities WHERE tps_configuration_id = $1`,
+        [id]
+      );
+      
+      if (existingActivity.rowCount > 0) {
+        // Actualizar la actividad existente
+        await client.query(
+          `UPDATE available_activities 
+           SET 
+             name = $1,
+             description = $2,
+             is_active = TRUE,
+             updated_at = CURRENT_TIMESTAMP
+           WHERE tps_configuration_id = $3`,
+          [activityName, activityDescription, id]
+        );
+      } else {
+        // Crear una nueva actividad
+        await client.query(
+          `INSERT INTO available_activities
+             (tps_configuration_id, name, description, is_active, start_date, end_date)
+           VALUES
+             ($1, $2, $3, TRUE, $4, $5)`,
+          [id, activityName, activityDescription, now.toISOString(), endDate.toISOString()]
+        );
+      }
+    } else {
+      // Si estamos desactivando la configuración, también desactivar la actividad asociada
+      await client.query(
+        `UPDATE available_activities
+         SET 
+           is_active = FALSE,
+           updated_at = CURRENT_TIMESTAMP
+         WHERE tps_configuration_id = $1`,
+        [id]
       );
     }
 
