@@ -225,9 +225,13 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  console.log('GET /api/tps-config/[id] - Iniciando solicitud');
+  console.log('Parámetros recibidos:', params);
   try {
     const id = parseInt(params.id);
+    console.log('ID convertido a número:', id);
     if (isNaN(id)) {
+      console.log('Error: ID no es un número válido');
       return NextResponse.json({ 
         success: false, 
         error: 'ID inválido' 
@@ -236,7 +240,11 @@ export async function GET(
 
     // Obtener el ID del usuario de Moodle desde las cookies
     const cookieStore = cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('Todas las cookies disponibles:', allCookies.map(c => c.name));
+    
     const userIdStr = cookieStore.get('moodleUserId')?.value;
+    console.log('Cookie moodleUserId:', userIdStr);
     
     if (!userIdStr) {
       return NextResponse.json({ 
@@ -266,6 +274,8 @@ export async function GET(
     );
 
     if (!result.rowCount || result.rowCount === 0) {
+      console.log('Error: No se encontraron datos con la consulta JOIN completa');
+      
       return NextResponse.json({ 
         success: false, 
         error: 'Configuración no encontrada' 
