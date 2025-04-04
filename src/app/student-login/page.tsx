@@ -77,13 +77,13 @@ export default function StudentLoginPage() {
 
       if (loginData.token) {
         // Guardar el token en una cookie
-        Cookies.set('studentMoodleToken', loginData.token, { secure: true, sameSite: 'strict' });
+        Cookies.set('studentMoodleToken', loginData.token, { secure: false, sameSite: 'strict' });
         
         // Guardar el username y email para identificar al estudiante
-        Cookies.set('studentUsername', userData.username || email.split('@')[0], { secure: true, sameSite: 'strict' });
-        Cookies.set('studentEmail', email, { secure: true, sameSite: 'strict' });
-        Cookies.set('studentFullName', userData.fullname || `Estudiante Demo`, { secure: true, sameSite: 'strict' });
-        Cookies.set('studentId', userData.id.toString(), { secure: true, sameSite: 'strict' });
+        Cookies.set('studentUsername', userData.username || email.split('@')[0], { secure: false, sameSite: 'strict' });
+        Cookies.set('studentEmail', email, { secure: false, sameSite: 'strict' });
+        Cookies.set('studentFullName', userData.fullname || `Estudiante Demo`, { secure: false, sameSite: 'strict' });
+        Cookies.set('studentId', userData.id.toString(), { secure: false, sameSite: 'strict' });
         
         // Redirigir a la página de selección de actividad
         router.push('/activity-select');
