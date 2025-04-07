@@ -208,6 +208,7 @@ export async function GET(request: Request) {
 }
 
 // POST: Crear una nueva configuración
+// POST: Crear una nueva configuración
 export async function POST(request: Request) {
   const client = await pool.connect();
   
@@ -241,40 +242,46 @@ export async function POST(request: Request) {
     // Comenzar transacción
     await client.query('BEGIN');
 
-    // Verificar e insertar curso si no existe
-const existingCourse = await client.query(
-  `SELECT moodle_course_id FROM moodle_courses 
-   WHERE moodle_course_id = $1`,
-  [data.moodle_course_id]
-);
-
-if (existingCourse.rowCount === 0) {
-  const courseName = data.course_name || `Curso ID: ${data.moodle_course_id}`;
-  const courseShortname = `CID-${data.moodle_course_id}`;
-  
-  await client.query(
-    `INSERT INTO moodle_courses (moodle_course_id, name, shortname) 
-     VALUES ($1, $2, $3)`,
-    [data.moodle_course_id, courseName, courseShortname]
-  );
-}
-
-// Verificar e insertar asignación si no existe
-const existingAssignment = await client.query(
-  `SELECT moodle_assignment_id FROM moodle_assignments 
-   WHERE moodle_assignment_id = $1 AND moodle_course_id = $2`,
-  [data.moodle_assignment_id, data.moodle_course_id]
-);
-
-if (existingAssignment.rowCount === 0) {
-  const assignmentName = data.assignment_name || `Actividad ID: ${data.moodle_assignment_id}`;
-  
-  await client.query(
-    `INSERT INTO moodle_assignments (moodle_assignment_id, moodle_course_id, name) 
-     VALUES ($1, $2, $3)`,
-    [data.moodle_assignment_id, data.moodle_course_id, assignmentName]
-  );
-}
+    // Verificar si el curso ya existe, si no, insertarlo
+    const existingCourse = await client.query(
+      `SELECT moodle_course_id FROM moodle_courses 
+       WHERE moodle_course_id = $1`,
+      [data.moodle_course_id]
+    );
+    
+    if (existingCourse.rowCount === 0) {
+      // Obtener nombre del curso de los datos o usar un valor por defecto
+      const courseName = data.course_name || `Curso ID: ${data.moodle_course_id}`;
+      const courseShortname = data.course_shortname || `C-${data.moodle_course_id}`;
+      
+      await client.query(
+        `INSERT INTO moodle_courses (moodle_course_id, name, shortname) 
+         VALUES ($1, $2, $3)`,
+        [data.moodle_course_id, courseName, courseShortname]
+      );
+      
+      console.log(`Curso insertado: ${data.moodle_course_id} - ${courseName}`);
+    }
+    
+    // Verificar si la asignación ya existe, si no, insertarla
+    const existingAssignment = await client.query(
+      `SELECT moodle_assignment_id FROM moodle_assignments 
+       WHERE moodle_assignment_id = $1 AND moodle_course_id = $2`,
+      [data.moodle_assignment_id, data.moodle_course_id]
+    );
+    
+    if (existingAssignment.rowCount === 0) {
+      // Obtener nombre de la asignación de los datos o usar valor por defecto
+      const assignmentName = data.assignment_name || `Actividad ID: ${data.moodle_assignment_id}`;
+      
+      await client.query(
+        `INSERT INTO moodle_assignments (moodle_assignment_id, moodle_course_id, name) 
+         VALUES ($1, $2, $3)`,
+        [data.moodle_assignment_id, data.moodle_course_id, assignmentName]
+      );
+      
+      console.log(`Asignación insertada: ${data.moodle_assignment_id} - ${assignmentName}`);
+    }
 
     // Verificar si ya existe una configuración activa para este curso y asignación
     const existingConfigResult: QueryResult = await client.query(
@@ -323,6 +330,33 @@ if (existingAssignment.rowCount === 0) {
         data.system_prompt
       ]
     );
+    
+    // Si la configuración se crea como activa, crear también una actividad
+    if (data.is_active) {
+      // Crear nombre descriptivo para la actividad
+      const courseName = data.course_name || `Curso ID: ${data.moodle_course_id}`;
+      const assignmentName = data.assignment_name || `Actividad ID: ${data.moodle_assignment_id}`;
+      const activityName = `TPS: ${assignmentName}`;
+      const activityDescription = `Actividad colaborativa Think-Pair-Share para ${courseName}: ${assignmentName}`;
+      
+      // Fechas por defecto
+      const now = new Date();
+      const endDate = new Date();
+      endDate.setDate(now.getDate() + 30); // 30 días en el futuro
+      
+      await client.query(
+        `INSERT INTO available_activities
+         (tps_configuration_id, name, description, is_active, start_date, end_date)
+         VALUES ($1, $2, $3, TRUE, $4, $5)`,
+        [
+          insertResult.rows[0].id,
+          activityName,
+          activityDescription,
+          now.toISOString(),
+          endDate.toISOString()
+        ]
+      );
+    }
 
     // Confirmar transacción
     await client.query('COMMIT');
@@ -339,7 +373,8 @@ if (existingAssignment.rowCount === 0) {
     
     return NextResponse.json({ 
       success: false, 
-      error: 'Error al crear configuración TPS' 
+      error: 'Error al crear configuración TPS',
+      details: error instanceof Error ? error.message : 'Error desconocido'
     }, { status: 500 });
   } finally {
     // Liberar el cliente de vuelta al pool

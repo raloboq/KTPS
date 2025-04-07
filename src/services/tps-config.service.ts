@@ -193,10 +193,19 @@ export async function toggleConfigurationStatus(
 ): Promise<APIResponse<TPSConfiguration>> {
   try {
     // Obtener los nombres del curso y asignación desde las cookies
+    // para asegurar que estén disponibles cuando se activa una configuración
     const courseName = Cookies.get('selectedCourseName') || '';
     const assignmentName = Cookies.get('selectedAssignmentName') || '';
     const courseId = parseInt(Cookies.get('selectedCourseId') || '0');
     const assignmentId = parseInt(Cookies.get('selectedAssignmentId') || '0');
+    
+    console.log('Enviando solicitud toggle-status con datos:', {
+      is_active: isActive,
+      course_name: courseName,
+      assignment_name: assignmentName,
+      moodle_course_id: courseId,
+      moodle_assignment_id: assignmentId
+    });
     
     const response = await fetch(`/api/tps-config/${id}/toggle-status`, {
       method: 'PUT',
@@ -205,12 +214,23 @@ export async function toggleConfigurationStatus(
       },
       body: JSON.stringify({ 
         is_active: isActive,
-        moodle_course_id: courseId,
-        moodle_assignment_id: assignmentId,
         course_name: courseName,
-        assignment_name: assignmentName
+        assignment_name: assignmentName,
+        moodle_course_id: courseId,
+        moodle_assignment_id: assignmentId
       }),
     });
+
+    if (!response.ok) {
+      // Manejo específico basado en el código de estado
+      const errorData = await response.json();
+      console.error(`Error del servidor (${response.status}):`, errorData);
+      
+      return { 
+        success: false, 
+        error: errorData.error || `Error del servidor (${response.status})` 
+      };
+    }
 
     const data = await response.json();
     return data;
@@ -222,7 +242,6 @@ export async function toggleConfigurationStatus(
     };
   }
 }
-
 /**
  * Genera un enlace de acceso para los estudiantes
  */
