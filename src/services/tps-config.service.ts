@@ -1,6 +1,8 @@
 // src/services/tps-config.service.ts
 
 import { TPSConfiguration, TPSConfigFormData, APIResponse, TPSConfigurationWithDetails } from '@/types/models';
+import Cookies from 'js-cookie';
+
 
 /**
  * Obtiene todas las configuraciones TPS creadas por el usuario actual
@@ -83,10 +85,16 @@ export async function createConfiguration(
   assignmentId: number
 ): Promise<APIResponse<TPSConfiguration>> {
   try {
+    const courseName = Cookies.get('selectedCourseName') || '';
+    const assignmentName = Cookies.get('selectedAssignmentName') || '';
+    
+    // Convertir duración de minutos a segundos para almacenamiento
     // Convertir duración de minutos a segundos para almacenamiento
     const payload = {
       moodle_course_id: courseId,
       moodle_assignment_id: assignmentId,
+      course_name: courseName, // ⭐ NUEVO: Enviar el nombre del curso
+      assignment_name: assignmentName, // ⭐ NUEVO: Enviar el nombre de la asignación
       think_phase_duration: configData.thinkPhaseDuration * 60,
       think_phase_instructions: configData.thinkPhaseInstructions,
       pair_phase_duration: configData.pairPhaseDuration * 60,
