@@ -78,7 +78,7 @@ export default function ActivitySelectPage() {
     fetchActivities();
   }, []);
 
-  const handleJoinActivity = async () => {
+  /*const handleJoinActivity = async () => {
     if (!selectedActivityId) {
       setError('Por favor, seleccione una actividad');
       return;
@@ -121,6 +121,55 @@ export default function ActivitySelectPage() {
   
         // Redirigir al estudiante a la fase de Think - SIN PARÁMETROS URL
         router.push('/think');
+      } else {
+        setError(data.error || 'Error al unirse a la actividad');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Error de conexión. Por favor, intente nuevamente.');
+    } finally {
+      setJoining(false);
+    }
+  };*/
+  const handleJoinActivity = async () => {
+    if (!selectedActivityId) {
+      setError('Por favor, seleccione una actividad');
+      return;
+    }
+  
+    setJoining(true);
+    setError(null);
+  
+    try {
+      const response = await fetch('/api/student/join-activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activityId: selectedActivityId
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (data.success) {
+        // Guardar información de la sala asignada en cookies
+        Cookies.set('roomId', data.roomId.toString(), { secure: false, sameSite: 'strict' });
+        Cookies.set('roomName', data.roomName, { secure: false, sameSite: 'strict' });
+        Cookies.set('activityId', selectedActivityId.toString(), { secure: false, sameSite: 'strict' });
+  
+        // Comprobar explícitamente que las cookies se han establecido
+        console.log('Cookies establecidas:');
+        console.log('roomId:', Cookies.get('roomId'));
+        console.log('roomName:', Cookies.get('roomName'));
+        console.log('activityId:', Cookies.get('activityId'));
+  
+        // Esperar un momento para asegurar que las cookies se han establecido
+        setTimeout(() => {
+          // Redirigir al estudiante a la fase de Think
+          router.push('/think');
+        }, 100);
       } else {
         setError(data.error || 'Error al unirse a la actividad');
       }
