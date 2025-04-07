@@ -167,11 +167,11 @@ export async function POST(request: Request) {
       // Liberar cliente
       client.release();
     }
-  } catch (error) {
-    console.error('Error al unirse a la actividad:', error);
+  } catch (errorr) {
+    console.error('Error al unirse a la actividad:', errorr);
     return NextResponse.json({ 
       success: false, 
-      error: 'Error al unirse a la actividad. Por favor, intente nuevamente.'
+      error: 'Error al unirse a la actividad. Por favor, intente nuevamente.',errorr
     }, { status: 500 });
   }
 }
