@@ -147,7 +147,7 @@ export async function PUT(
     await client.query('BEGIN');
 
     // ⭐ NUEVO: Verificar si el curso ya existe, si no, insertarlo
-    const existingCourse = await client.query(
+    /*const existingCourse = await client.query(
       `SELECT moodle_course_id FROM moodle_courses 
        WHERE moodle_course_id = $1`,
       [data.moodle_course_id]
@@ -183,7 +183,7 @@ export async function PUT(
          VALUES ($1, $2, $3)`,
         [data.moodle_assignment_id, data.moodle_course_id, assignmentName]
       );
-    }
+    }*/
 
     // Verificar que la configuración exista y pertenezca al usuario
     const existingConfigResult: QueryResult = await client.query(

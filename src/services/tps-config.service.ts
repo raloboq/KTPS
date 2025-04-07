@@ -164,7 +164,7 @@ export async function updateConfiguration(
 /**
  * Cambia el estado de activación de una configuración TPS
  */
-export async function toggleConfigurationStatus(
+/*export async function toggleConfigurationStatus(
   id: number, 
   isActive: boolean
 ): Promise<APIResponse<TPSConfiguration>> {
@@ -175,6 +175,41 @@ export async function toggleConfigurationStatus(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ is_active: isActive }),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Error toggling status for configuration ID ${id}:`, error);
+    return { 
+      success: false, 
+      error: 'Error al cambiar el estado de la configuración.' 
+    };
+  }
+}*/
+export async function toggleConfigurationStatus(
+  id: number, 
+  isActive: boolean
+): Promise<APIResponse<TPSConfiguration>> {
+  try {
+    // Obtener los nombres del curso y asignación desde las cookies
+    const courseName = Cookies.get('selectedCourseName') || '';
+    const assignmentName = Cookies.get('selectedAssignmentName') || '';
+    const courseId = parseInt(Cookies.get('selectedCourseId') || '0');
+    const assignmentId = parseInt(Cookies.get('selectedAssignmentId') || '0');
+    
+    const response = await fetch(`/api/tps-config/${id}/toggle-status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        is_active: isActive,
+        moodle_course_id: courseId,
+        moodle_assignment_id: assignmentId,
+        course_name: courseName,
+        assignment_name: assignmentName
+      }),
     });
 
     const data = await response.json();

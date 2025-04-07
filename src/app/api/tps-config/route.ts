@@ -241,6 +241,41 @@ export async function POST(request: Request) {
     // Comenzar transacción
     await client.query('BEGIN');
 
+    // Verificar e insertar curso si no existe
+const existingCourse = await client.query(
+  `SELECT moodle_course_id FROM moodle_courses 
+   WHERE moodle_course_id = $1`,
+  [data.moodle_course_id]
+);
+
+if (existingCourse.rowCount === 0) {
+  const courseName = data.course_name || `Curso ID: ${data.moodle_course_id}`;
+  const courseShortname = `CID-${data.moodle_course_id}`;
+  
+  await client.query(
+    `INSERT INTO moodle_courses (moodle_course_id, name, shortname) 
+     VALUES ($1, $2, $3)`,
+    [data.moodle_course_id, courseName, courseShortname]
+  );
+}
+
+// Verificar e insertar asignación si no existe
+const existingAssignment = await client.query(
+  `SELECT moodle_assignment_id FROM moodle_assignments 
+   WHERE moodle_assignment_id = $1 AND moodle_course_id = $2`,
+  [data.moodle_assignment_id, data.moodle_course_id]
+);
+
+if (existingAssignment.rowCount === 0) {
+  const assignmentName = data.assignment_name || `Actividad ID: ${data.moodle_assignment_id}`;
+  
+  await client.query(
+    `INSERT INTO moodle_assignments (moodle_assignment_id, moodle_course_id, name) 
+     VALUES ($1, $2, $3)`,
+    [data.moodle_assignment_id, data.moodle_course_id, assignmentName]
+  );
+}
+
     // Verificar si ya existe una configuración activa para este curso y asignación
     const existingConfigResult: QueryResult = await client.query(
       `SELECT id FROM tps_configurations 
