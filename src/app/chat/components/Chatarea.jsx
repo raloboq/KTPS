@@ -313,7 +313,6 @@ export default ChatArea;
 import { useState, useEffect, useRef, useCallback } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Send } from "lucide-react";
-import Image from "next/image";
 
 const INTERACTION_SEND_INTERVAL = 5000; // 5 segundos
 
@@ -388,7 +387,6 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
         console.log('Sesión de chat iniciada:', data.id_sesion_chat);
       } catch (error) {
         console.error('Error al iniciar sesión de chat:', error);
-        // Aquí podrías implementar una lógica de reintento o notificar al usuario
       }
     };
 
@@ -499,8 +497,12 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
     }
   }
 
+  // Default avatar images as data URIs (inline SVGs encoded as data URIs)
+  const defaultBotAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23E6007E'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z'/%3E%3C/svg%3E";
+  
+  const defaultUserAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23009A93'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
   return (
-    
     <div className="chat-area" style={{
       width: '100%',
       height: '100%',
@@ -531,14 +533,13 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
               flexShrink: 0,
               marginRight: item.role === 'model' ? '10px' : '0',
               marginLeft: item.role === 'user' ? '10px' : '0',
-              position: 'relative'
+              backgroundColor: item.role === 'model' ? '#E6007E' : '#009A93',
             }}>
-              <Image
-                src={item.role === 'model' ? "/bot.jpeg" : "/user.png"}
-                alt={item.role === 'model' ? "Lupi avatar" : "User avatar"}
-                width={40}
-                height={40}
-                style={{ objectFit: 'cover' }}
+              {/* Using inline SVG data URIs instead of image files */}
+              <img
+                src={item.role === 'model' ? defaultBotAvatar : defaultUserAvatar}
+                alt={item.role === 'model' ? "Bot" : "You"}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
             <div style={{
