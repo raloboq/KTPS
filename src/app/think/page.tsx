@@ -234,7 +234,7 @@ export default function ThinkPage() {
     </div>
   );
 }*/
-'use client';
+/*'use client';
   
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -498,6 +498,363 @@ export default function ThinkPage() {
           <p>Gracias, espera a que el tiempo finalice para continuar</p>
         </div>
       )}
+      {timeRemaining <= 5 && (
+        <div className={styles.finalCountdown}>
+          <p>Finalizando fase de reflexión. Preparándose para la colaboración en parejas...</p>
+        </div>
+      )}
+    </div>
+  );
+}*/
+'use client';
+  
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+import styles from './thinkPage.module.css';
+import { iniciarSesion } from '../api/sesiones';
+import { registrarInteraccion } from '../api/interacciones';
+import { guardarReflexion } from '../api/reflexiones';
+
+const INTERACTION_SEND_INTERVAL = 3000; // 3 seconds
+const CONTENT_CAPTURE_INTERVAL = 5000; // 5 seconds
+const PAUSE_THRESHOLD = 3000; 
+
+interface ActivityConfig {
+  think_phase_instructions: string;
+  think_phase_duration: number;
+  assignment_name: string;
+  course_name: string;
+}
+
+export default function ThinkPage() {
+  const [thought, setThought] = useState('');
+  const [timeRemaining, setTimeRemaining] = useState(0); // Will be set dynamically
+  const [alias, setAlias] = useState('');
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomName, setRoomName] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [activityConfig, setActivityConfig] = useState<ActivityConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // For interaction tracking
+  const [lastTypingTime, setLastTypingTime] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const pauseStartTimeRef = useRef<number | null>(null);
+  const lastContentRef = useRef('');
+  const lastCapturedContentRef = useRef('');
+  const lastCaptureTimeRef = useRef(Date.now());
+  const [showPopup, setShowPopup] = useState(false);
+  const interactionsQueueRef = useRef<Array<{ tipo: string; detalles: any }>>([]);
+  const isRedirectingRef = useRef(false); // To prevent multiple redirects
+
+  // Function to fetch activity configuration
+  const fetchActivityConfiguration = async () => {
+    try {
+      const roomIdFromCookie = Cookies.get('roomId');
+      
+      if (!roomIdFromCookie) {
+        throw new Error('Room ID not found in cookies');
+      }
+      
+      const response = await fetch(`/api/student/check-room-status`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch activity configuration');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load activity data');
+      }
+      
+      // Get the configuration from the response
+      return {
+        think_phase_instructions: data.room.think_phase_instructions,
+        think_phase_duration: data.room.think_phase_duration,
+        assignment_name: data.room.activity_name,
+        course_name: data.room.course_name || 'Course'
+      };
+    } catch (error) {
+      console.error('Error fetching activity configuration:', error);
+      return null;
+    }
+  };
+
+  const sendInteractions = useCallback(async () => {
+    if (sessionId && interactionsQueueRef.current.length > 0) {
+      const interactionsToSend = [...interactionsQueueRef.current];
+      interactionsQueueRef.current = [];
+
+      try {
+        await Promise.all(interactionsToSend.map(interaction => 
+          registrarInteraccion(sessionId, interaction.tipo, interaction.detalles, '/think')
+        ));
+      } catch (error) {
+        console.error('Error al enviar interacciones:', error);
+        // Optionally re-add failed interactions to the queue
+        interactionsQueueRef.current.push(...interactionsToSend);
+      }
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    const intervalId = setInterval(sendInteractions, INTERACTION_SEND_INTERVAL);
+    return () => clearInterval(intervalId);
+  }, [sendInteractions]);
+
+  useEffect(() => {
+    // Get data from cookies and initialize session
+    const initSession = async () => {
+      try {
+        // Get user data from cookies
+        const studentUsername = Cookies.get('studentUsername');
+        const roomIdFromCookie = Cookies.get('roomId');
+        const roomNameFromCookie = Cookies.get('roomName');
+        
+        if (studentUsername) {
+          setAlias(studentUsername);
+        } else {
+          throw new Error('No se encontró nombre de usuario en las cookies');
+        }
+        
+        if (roomIdFromCookie) {
+          setRoomId(roomIdFromCookie);
+        } else {
+          throw new Error('No se encontró ID de sala en las cookies');
+        }
+        
+        if (roomNameFromCookie) {
+          setRoomName(roomNameFromCookie);
+        }
+
+        // Fetch the activity configuration
+        const config = await fetchActivityConfiguration();
+        
+        if (config) {
+          setActivityConfig(config);
+          // Set timer based on the configuration (converting seconds to minutes)
+          setTimeRemaining(config.think_phase_duration);
+        } else {
+          // Use default values if configuration not available
+          setTimeRemaining(900); // 15 minutes as default
+        }
+        
+        // Initialize session
+        if (studentUsername) {
+          const id_sesion = await iniciarSesion(
+            studentUsername, 
+            config?.assignment_name || 'Think-Pair-Share Activity'
+          );
+          setSessionId(id_sesion);
+          queueInteraction('inicio_sesion', { alias: studentUsername });
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing session:', error);
+        setError(error instanceof Error ? error.message : 'Error al inicializar la sesión');
+        setLoading(false);
+      }
+    };
+
+    initSession();
+  }, []);
+
+  // Set up timer
+  useEffect(() => {
+    if (loading || timeRemaining <= 0) return;
+    
+    const timer = setInterval(() => {
+      setTimeRemaining((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          console.log('¡Se acabó el tiempo!');
+          if (!isRedirectingRef.current) {
+            handleSubmit();
+          }
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [loading, timeRemaining]);
+
+  const handleSave = () => {
+    setShowPopup(true);
+    setTimeout(() => setShowPopup(false), 3000); // Close popup after 3 seconds
+  };
+
+  useEffect(() => {
+    let pauseTimer: NodeJS.Timeout;
+
+    if (lastTypingTime && !isPaused) {
+      pauseTimer = setTimeout(() => {
+        setIsPaused(true);
+        pauseStartTimeRef.current = Date.now();
+      }, PAUSE_THRESHOLD);
+    }
+
+    return () => clearTimeout(pauseTimer);
+  }, [lastTypingTime, isPaused]);
+
+  const queueInteraction = (tipo: string, detalles: any) => {
+    interactionsQueueRef.current.push({ tipo, detalles });
+  };
+
+  const captureContent = useCallback((currentContent: string, force: boolean = false) => {
+    const currentTime = Date.now();
+    if (force || currentTime - lastCaptureTimeRef.current >= CONTENT_CAPTURE_INTERVAL) {
+      if (currentContent !== lastCapturedContentRef.current) {
+        queueInteraction('captura_contenido', {
+          contenido: currentContent,
+          timestamp: currentTime,
+        });
+        lastCapturedContentRef.current = currentContent;
+        lastCaptureTimeRef.current = currentTime;
+      }
+    }
+  }, []);
+
+  const handleThoughtChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const currentContent = e.target.value;
+    setThought(currentContent);
+    const currentTime = Date.now();
+
+    if (isPaused) {
+      const pauseDuration = pauseStartTimeRef.current ? currentTime - pauseStartTimeRef.current : 0;
+      queueInteraction('pausa_escritura', { duracion: pauseDuration });
+      setIsPaused(false);
+      pauseStartTimeRef.current = null;
+    }
+
+    const lengthDiff = currentContent.length - lastContentRef.current.length;
+    const largeDelete = lengthDiff < -10;
+    const timeDiff = lastTypingTime ? (currentTime - lastTypingTime) / 1000 / 60 : 0;
+    const typingSpeed = timeDiff > 0 ? Math.abs(lengthDiff) / timeDiff : 0;
+    const newLineAdded = currentContent.split('\n').length > lastContentRef.current.split('\n').length;
+    const punctuationAdded = /[.,!?;:]/.test(currentContent) && !/[.,!?;:]/.test(lastContentRef.current);
+
+    queueInteraction('escritura', {
+      longitud: currentContent.length,
+      diferencia_longitud: lengthDiff,
+      velocidad_escritura: Math.round(typingSpeed),
+      eliminacion_grande: largeDelete,
+      nueva_linea: newLineAdded,
+      puntuacion_agregada: punctuationAdded,
+    });
+
+    captureContent(currentContent);
+
+    lastContentRef.current = currentContent;
+    setLastTypingTime(currentTime);
+  };
+
+  const handleSubmit = async () => {
+    if (isRedirectingRef.current) return; // Prevent multiple redirects
+    isRedirectingRef.current = true;
+    
+    console.log('Iniciando proceso de submit y redirección a pair');
+    
+    try {
+      if (isPaused) {
+        const pauseDuration = pauseStartTimeRef.current ? Date.now() - pauseStartTimeRef.current : 0;
+        queueInteraction('pausa_escritura', { duracion: pauseDuration });
+      }
+      
+      // Ensure we capture the final content
+      captureContent(thought, true);
+      await sendInteractions();
+      queueInteraction('envío', { contenido_final: thought });
+      await sendInteractions();
+      
+      // Save the reflection if we have sessionId
+      if (sessionId && alias) {
+        try {
+          await guardarReflexion(sessionId, thought, alias);
+          console.log('Reflexión guardada exitosamente');
+        } catch (error) {
+          console.error('Error al guardar reflexión, pero continuando con redirección:', error);
+        }
+      }
+      
+      // Simple redirection without URL parameters
+      console.log('Redirigiendo a pair');
+      router.push('/pair');
+    } catch (error) {
+      console.error('Error en el proceso de submit:', error);
+      isRedirectingRef.current = false; // Allow retry if there's an error
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loader}></div>
+        <p>Cargando actividad...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <h1>Error</h1>
+        <p>{error}</p>
+        <button 
+          onClick={() => router.push('/activity-select')}
+          className={styles.button}
+        >
+          Volver a selección de actividades
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.title}>Fase de Reflexión Individual</h1>
+      <p className={`${styles.timer} ${timeRemaining <= 120 ? styles.timerWarning : ''}`}>
+        Tiempo Restante: {formatTime(timeRemaining)}
+      </p>
+      <div className={styles.topicContainer}>
+        <h2 className={styles.topicTitle}>
+          {activityConfig?.assignment_name || 'Actividad Think-Pair-Share'}
+        </h2>
+        
+        <div className={styles.instructionsContent}>
+          {activityConfig?.think_phase_instructions || 
+            "Por favor reflexiona sobre la actividad propuesta. No se encontraron instrucciones específicas."}
+        </div>
+      </div>
+      
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className={styles.form}>
+        <textarea
+          placeholder="Escribe tus reflexiones aquí..."
+          value={thought}
+          onChange={handleThoughtChange}
+          className={styles.textarea}
+        />
+        <button type="submit" className={styles.button}>Guardar</button>
+      </form>
+      
+      {showPopup && (
+        <div className={styles.popup}>
+          <p>Gracias, espera a que el tiempo finalice para continuar</p>
+        </div>
+      )}
+      
       {timeRemaining <= 5 && (
         <div className={styles.finalCountdown}>
           <p>Finalizando fase de reflexión. Preparándose para la colaboración en parejas...</p>
