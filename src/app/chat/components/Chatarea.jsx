@@ -331,6 +331,10 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
   const messagesQueueRef = useRef([]);
   const interactionsQueueRef = useRef([]);
 
+  // URLs de las imágenes de Imgur
+  const LUPI_IMAGE_URL = "https://i.imgur.com/WR4vapu.jpg";
+  const USER_IMAGE_URL = "https://i.imgur.com/qbNi3BK.jpg";
+
   useEffect(() => {
     const initializeAI = async () => {
       try {
@@ -544,7 +548,7 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
               backgroundColor: item.role === 'model' ? '#E6007E' : '#009A93',
             }}>
               <img
-                src={item.role === 'model' ? '/bot.jpeg' : '/user.png'}
+                src={item.role === 'model' ? LUPI_IMAGE_URL : USER_IMAGE_URL}
                 alt={item.role === 'model' ? "Lupi" : "Usuario"}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => handleImageError(e, item.role)}
