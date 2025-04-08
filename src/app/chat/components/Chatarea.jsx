@@ -331,6 +331,14 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
   const messagesQueueRef = useRef([]);
   const interactionsQueueRef = useRef([]);
 
+  // Determinar la URL base para las imágenes
+  const [basePath, setBasePath] = useState('');
+  
+  useEffect(() => {
+    // Intentar determinar la URL base del sitio
+    setBasePath(window.location.origin);
+  }, []);
+
   useEffect(() => {
     const initializeAI = async () => {
       try {
@@ -497,10 +505,17 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
     }
   }
 
-  // Default avatar images as data URIs (inline SVGs encoded as data URIs)
+  // Backup SVG data URIs en caso de que las imágenes fallen
   const defaultBotAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23E6007E'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z'/%3E%3C/svg%3E";
-  
   const defaultUserAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23009A93'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
+  // Función para intentar cargar las imágenes y usar fallback si fallan
+  const getImageUrl = (isBot) => {
+    // Intentar usar las rutas absolutas completas
+    return isBot 
+      ? `${basePath}/bot.jpeg` 
+      : `${basePath}/user.png`;
+  };
 
   return (
     <div className="chat-area" style={{
@@ -535,11 +550,14 @@ const ChatArea = ({ systemInstruction, userName, roomId }) => {
               marginLeft: item.role === 'user' ? '10px' : '0',
               backgroundColor: item.role === 'model' ? '#E6007E' : '#009A93',
             }}>
-              {/* Using inline SVG data URIs instead of image files */}
               <img
-                src={item.role === 'model' ? defaultBotAvatar : defaultUserAvatar}
+                src={getImageUrl(item.role === 'model')}
                 alt={item.role === 'model' ? "Bot" : "You"}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  // Si la imagen falla, usar el SVG de respaldo
+                  e.target.src = item.role === 'model' ? defaultBotAvatar : defaultUserAvatar;
+                }}
               />
             </div>
             <div style={{
