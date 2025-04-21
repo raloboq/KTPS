@@ -488,6 +488,19 @@ export default function SharePage() {
     share_phase_instructions: string;
   } | null>(null);
 
+const parseCollaborativeContent = (content: string) => {
+  // Reemplazar etiquetas personalizadas con HTML estándar
+  return content
+    .replace(/<paragraph>/g, '<p>')
+    .replace(/<\/paragraph>/g, '</p>')
+    .replace(/<bold>/g, '<strong>')
+    .replace(/<\/bold>/g, '</strong>')
+    .replace(/<italic>/g, '<em>')
+    .replace(/<\/italic>/g, '</em>')
+    .replace(/<strikethrough>/g, '<span style="text-decoration: line-through;">')
+    .replace(/<\/strikethrough>/g, '</span>');
+};
+
   // Cargar datos desde cookies y configurar la página
   useEffect(() => {
     // Obtener datos de las cookies
@@ -812,81 +825,85 @@ export default function SharePage() {
       )}
       
       {activeTab === 'collaborations' && (
-        <div className={styles.contentContainer}>
-          <h3 className={styles.contentTitle}>Documentos de la Fase de Colaboración en Parejas</h3>
-          
-          {collaborations.length === 0 ? (
-            <p className={styles.emptyState}>No hay documentos colaborativos disponibles.</p>
-          ) : (
-            <div className={styles.cardGrid}>
-              {collaborations.map(collab => (
-                <div key={collab.id} className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h4 className={styles.cardTitle}>{collab.roomName}</h4>
-                    <p className={styles.cardParticipants}>
-                      Participantes: {collab.participants.join(', ')}
-                    </p>
-                    <p className={styles.cardTimestamp}>
-                      {new Date(collab.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  
-                  <div className={styles.cardContent}>
-                    {expandedCollaboration === collab.id ? (
-                      <div className={styles.formattedContent}>
-                        {collab.content.split('\n').map((paragraph, index) => (
-                          <p key={index}>{paragraph}</p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>{collab.content.substring(0, 200)}...
-                        <button 
-                          className={styles.readMoreButton}
-                          onClick={() => setExpandedCollaboration(collab.id)}
-                        >
-                          Leer más
-                        </button>
-                      </p>
-                    )}
-                    
-                    {expandedCollaboration === collab.id && (
-                      <button 
-                        className={styles.readLessButton}
-                        onClick={() => setExpandedCollaboration(null)}
-                      >
-                        Leer menos
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className={styles.feedbackSection}>
-                    {feedbackSent[collab.id] ? (
-                      <p className={styles.feedbackSent}>
-                        ✓ Retroalimentación enviada
-                      </p>
-                    ) : (
-                      <>
-                        <textarea
-                          className={styles.feedbackInput}
-                          placeholder="Escribe tu retroalimentación aquí..."
-                          value={feedbackText[collab.id] || ''}
-                          onChange={(e) => handleFeedbackChange(collab.id, e.target.value)}
-                        />
-                        <button
-                          className={styles.feedbackButton}
-                          onClick={() => handleSendFeedback(collab.id, 'collaboration')}
-                        >
-                          Enviar comentario
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+  <div className={styles.contentContainer}>
+    <h3 className={styles.contentTitle}>Documentos de la Fase de Colaboración en Parejas</h3>
+    
+    {collaborations.length === 0 ? (
+      <p className={styles.emptyState}>No hay documentos colaborativos disponibles.</p>
+    ) : (
+      <div className={styles.cardGrid}>
+        {collaborations.map(collab => (
+          <div key={collab.id} className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h4 className={styles.cardTitle}>{collab.roomName}</h4>
+              <p className={styles.cardParticipants}>
+                Participantes: {collab.participants.length > 0 
+                  ? collab.participants.join(', ') 
+                  : 'No hay información de participantes'}
+              </p>
+              <p className={styles.cardTimestamp}>
+                {new Date(collab.timestamp).toLocaleString()}
+              </p>
             </div>
-          )}
-        </div>
-      )}
+            
+            <div className={styles.cardContent}>
+              {expandedCollaboration === collab.id ? (
+                <div 
+                  className={styles.formattedContent}
+                  dangerouslySetInnerHTML={{ 
+                    __html: parseCollaborativeContent(collab.content) 
+                  }}
+                />
+              ) : (
+                <p>
+                  {collab.content.replace(/<[^>]*>/g, '').substring(0, 200)}...
+                  <button 
+                    className={styles.readMoreButton}
+                    onClick={() => setExpandedCollaboration(collab.id)}
+                  >
+                    Leer más
+                  </button>
+                </p>
+              )}
+              
+              {expandedCollaboration === collab.id && (
+                <button 
+                  className={styles.readLessButton}
+                  onClick={() => setExpandedCollaboration(null)}
+                >
+                  Leer menos
+                </button>
+              )}
+            </div>
+            
+            <div className={styles.feedbackSection}>
+              {feedbackSent[collab.id] ? (
+                <p className={styles.feedbackSent}>
+                  ✓ Retroalimentación enviada
+                </p>
+              ) : (
+                <>
+                  <textarea
+                    className={styles.feedbackInput}
+                    placeholder="Escribe tu retroalimentación aquí..."
+                    value={feedbackText[collab.id] || ''}
+                    onChange={(e) => handleFeedbackChange(collab.id, e.target.value)}
+                  />
+                  <button
+                    className={styles.feedbackButton}
+                    onClick={() => handleSendFeedback(collab.id, 'collaboration')}
+                  >
+                    Enviar comentario
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
       
       {timeRemaining <= 30 && (
         <div className={styles.finalCountdown}>
