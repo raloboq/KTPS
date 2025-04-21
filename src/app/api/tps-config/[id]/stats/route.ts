@@ -183,9 +183,18 @@ export async function GET(
       SELECT 
         COUNT(DISTINCT sc.id_sesion_colaborativa) as total_sessions,
         COUNT(DISTINCT pc.nombre_usuario) as total_students,
-        AVG(EXTRACT(EPOCH FROM (sc.fecha_fin - sc.fecha_inicio))/60) as avg_think_time,
-        AVG(EXTRACT(EPOCH FROM (sc.fecha_fin - sc.fecha_inicio))/60) as avg_pair_time,
-        AVG(EXTRACT(EPOCH FROM (sc.fecha_fin - sc.fecha_inicio))/60) as avg_share_time
+        CASE 
+          WHEN COUNT(sc.id_sesion_colaborativa) = 0 THEN 0
+          ELSE AVG(EXTRACT(EPOCH FROM (COALESCE(sc.fecha_fin, CURRENT_TIMESTAMP) - sc.fecha_inicio))/60) 
+        END as avg_think_time,
+        CASE 
+          WHEN COUNT(sc.id_sesion_colaborativa) = 0 THEN 0
+          ELSE AVG(EXTRACT(EPOCH FROM (COALESCE(sc.fecha_fin, CURRENT_TIMESTAMP) - sc.fecha_inicio))/60) 
+        END as avg_pair_time,
+        CASE 
+          WHEN COUNT(sc.id_sesion_colaborativa) = 0 THEN 0
+          ELSE AVG(EXTRACT(EPOCH FROM (COALESCE(sc.fecha_fin, CURRENT_TIMESTAMP) - sc.fecha_inicio))/60) 
+        END as avg_share_time
       FROM 
         sesiones_colaborativas sc
       LEFT JOIN 
@@ -234,7 +243,10 @@ export async function GET(
       )
       SELECT 
         COUNT(id_reflexion) as total_reflections,
-        AVG(LENGTH(contenido)) as average_length,
+        CASE 
+          WHEN COUNT(id_reflexion) = 0 THEN 0
+          ELSE AVG(LENGTH(contenido))
+        END as average_length,
         COUNT(DISTINCT usuario) as participation_rate
       FROM 
         think_sessions
@@ -247,7 +259,7 @@ export async function GET(
           sc.id_sesion_colaborativa,
           ccc.id_captura,
           ccc.contenido,
-          EXTRACT(EPOCH FROM (sc.fecha_fin - sc.fecha_inicio))/60 as duration_minutes
+          EXTRACT(EPOCH FROM (COALESCE(sc.fecha_fin, CURRENT_TIMESTAMP) - sc.fecha_inicio))/60 as duration_minutes
         FROM 
           sesiones_colaborativas sc
         LEFT JOIN 
@@ -261,13 +273,23 @@ export async function GET(
           MAX(id_captura) as last_capture_id
         FROM 
           capturas_contenido_colaborativo
+        WHERE EXISTS (SELECT 1 FROM pair_sessions ps WHERE ps.id_sesion_colaborativa = id_sesion_colaborativa)
         GROUP BY 
           id_sesion_colaborativa
       )
       SELECT 
-        AVG(ps.duration_minutes) as average_collaboration_time,
-        COUNT(DISTINCT ic.id_interaccion)/COUNT(DISTINCT ps.id_sesion_colaborativa) as average_messages,
-        AVG(LENGTH(ccc.contenido)) as average_doc_length
+        CASE 
+          WHEN COUNT(DISTINCT ps.id_sesion_colaborativa) = 0 THEN 0
+          ELSE AVG(ps.duration_minutes)
+        END as average_collaboration_time,
+        CASE 
+          WHEN COUNT(DISTINCT ps.id_sesion_colaborativa) = 0 THEN 0
+          ELSE COUNT(DISTINCT ic.id_interaccion)::float / NULLIF(COUNT(DISTINCT ps.id_sesion_colaborativa), 0)
+        END as average_messages,
+        CASE 
+          WHEN COUNT(ccc.id_captura) = 0 THEN 0
+          ELSE AVG(LENGTH(ccc.contenido))
+        END as average_doc_length
       FROM 
         pair_sessions ps
       LEFT JOIN 
@@ -278,28 +300,48 @@ export async function GET(
         capturas_contenido_colaborativo ccc ON lc.last_capture_id = ccc.id_captura
     `, [configId]);
 
-    // 5. Estadísticas de la fase Share
-    const shareStats = await pool.query(`
-      SELECT 
-        COUNT(DISTINCT f.id_feedback) as total_feedback,
-        AVG(LENGTH(f.contenido)) as average_feedback_length
-      FROM 
-        feedback f
-      JOIN 
-        sesiones_colaborativas sc ON f.id_sesion_colaborativa = sc.id_sesion_colaborativa
-      WHERE 
-        sc.tps_configuration_id = $1
-    `, [configId]);
+    // 5. Estadísticas de la fase Share (comprobando si existe la tabla feedback)
+    let shareStats = { rows: [{ total_feedback: '0', average_feedback_length: '0' }] };
+    
+    try {
+      // Comprobar si la tabla feedback existe
+      const feedbackTableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'feedback'
+        ) as exists
+      `);
+      
+      if (feedbackTableCheck.rows[0].exists) {
+        // Si la tabla existe, consultar estadísticas
+        shareStats = await pool.query(`
+          SELECT 
+            COUNT(DISTINCT f.id_feedback) as total_feedback,
+            CASE 
+              WHEN COUNT(f.id_feedback) = 0 THEN 0
+              ELSE AVG(LENGTH(f.contenido))
+            END as average_feedback_length
+          FROM 
+            feedback f
+          JOIN 
+            sesiones_colaborativas sc ON f.id_sesion_colaborativa = sc.id_sesion_colaborativa
+          WHERE 
+            sc.tps_configuration_id = $1
+        `, [configId]);
+      }
+    } catch (error) {
+      // Si hay un error en la consulta, probablemente la tabla no existe
+      console.log('Tabla feedback no encontrada o error en la consulta:', error);
+    }
 
     // 6. Distribución de tiempo por fase
     const timeDistribution = [
-      { phase: "Think", percentage: 32 }, // Valores por defecto que se podrían calcular con datos reales
+      { phase: "Think", percentage: 32 }, // Valores por defecto 
       { phase: "Pair", percentage: 45 },
       { phase: "Share", percentage: 23 }
     ];
 
-    // 7. Consultar temas más comunes (esto es más complicado, podría requerir análisis de texto)
-    // Por ahora usamos valores de ejemplo
+    // 7. Consultar temas más comunes (valor estático por ahora)
     const mostCommonTopic = "Beneficios de las redes sociales";
 
     // Preparar la respuesta con los datos consultados
