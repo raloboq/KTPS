@@ -513,45 +513,149 @@ export function Room({ children }: RoomProps) {
   const finalizarSesionColaborativa = useCallback(async () => {
     if (sessionId) {
       try {
-        // Primero capturar el contenido final del documento colaborativo
-      const textContent = doc?.getText('content')?.toString() || '';
-      
-      // Guardar el contenido final
-      await fetch('/api/capturar-contenido-colaborativo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id_sesion_colaborativa: sessionId,
-          contenido: textContent 
-        })
-      });
-      // Y luego finalizar la sesión como ya lo hace
-        await fetch('/api/finalizar-sesion-colaborativa', {
+        // Obtener el contenido actual del documento colaborativo
+        let documentContent = '';
+        
+        // Si estamos usando Y.js, extraer el texto del documento
+        if (doc) {
+          try {
+            console.log('Intentando obtener contenido del documento Y.js');
+            
+            // Intenta obtener el texto del documento a través de diferentes métodos
+            if (doc.getText) {
+              // Intenta obtener un YText si existe
+              try {
+                const textType = doc.getText('content');
+                documentContent = textType.toString();
+                console.log('Contenido obtenido de doc.getText(content):', documentContent);
+              } catch (textError) {
+                console.error('Error obteniendo texto de content:', textError);
+              }
+            }
+            
+            // Si todavía no hay contenido, intentamos otras propiedades
+            if (!documentContent && doc.share) {
+              console.log('Buscando en doc.share - keys disponibles:', Array.from(doc.share.keys()));
+              
+              // Intentar con diferentes claves comunes
+              const possibleKeys = ['content', 'text', 'document', 'editor'];
+              for (const key of possibleKeys) {
+                if (doc.share.has(key)) {
+                  const textType = doc.share.get(key);
+                  if (textType && typeof textType.toString === 'function') {
+                    documentContent = textType.toString();
+                    console.log(`Contenido obtenido de doc.share.get(${key}):`, documentContent);
+                    break;
+                  }
+                }
+              }
+              
+              // Si aún no hay contenido, tomamos el primero que encontremos
+              if (!documentContent) {
+                const firstKey = Array.from(doc.share.keys())[0];
+                if (firstKey) {
+                  const textType = doc.share.get(firstKey);
+                  if (textType && typeof textType.toString === 'function') {
+                    documentContent = textType.toString();
+                    console.log(`Contenido obtenido de primera clave ${firstKey}:`, documentContent);
+                  }
+                }
+              }
+            }
+            
+            // Si todavía no hay contenido, intentamos serializar todo el documento
+            if (!documentContent) {
+              console.log('Intentando serializar todo el documento');
+              documentContent = JSON.stringify(doc.toJSON());
+            }
+          } catch (e) {
+            console.error('Error al extraer contenido del documento:', e);
+            documentContent = 'Error al extraer contenido: ' + (e instanceof Error ? e.message : 'Error desconocido');
+          }
+        }
+        
+        // Si hay un provider con un documento de texto, intentamos usarlo
+        if (!documentContent && provider && provider.doc) {
+          try {
+            documentContent = provider.doc.toString();
+            console.log('Contenido obtenido del provider.document:', documentContent);
+          } catch (e) {
+            console.error('Error al extraer contenido del provider:', e);
+          }
+        }
+        
+        // Si aún no tenemos contenido, vemos si hay algún elemento en el DOM
+        if (!documentContent) {
+          try {
+            // Si estamos en el navegador, intentamos obtener el contenido del editor
+            if (typeof document !== 'undefined') {
+              const editorElement = document.querySelector('[contenteditable="true"]');
+              if (editorElement) {
+                documentContent = editorElement.innerHTML;
+                console.log('Contenido obtenido del DOM:', documentContent);
+              }
+            }
+          } catch (e) {
+            console.error('Error al obtener contenido del DOM:', e);
+          }
+        }
+        
+        // Si aún no tenemos contenido, usamos un mensaje por defecto
+        if (!documentContent) {
+          documentContent = 'No se pudo extraer el contenido del documento colaborativo';
+        }
+        
+        console.log('Guardando contenido colaborativo final, longitud:', documentContent.length);
+        
+        // Guardar el contenido final del documento colaborativo
+        const saveResponse = await fetch('/api/capturar-contenido-colaborativo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_sesion_colaborativa: sessionId,
+            contenido: documentContent
+          })
+        });
+        
+        if (!saveResponse.ok) {
+          console.error('Error al guardar contenido:', await saveResponse.text());
+        } else {
+          console.log('Contenido guardado exitosamente');
+        }
+  
+        // Finalizar la sesión colaborativa
+        const finalizeResponse = await fetch('/api/finalizar-sesion-colaborativa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id_sesion_colaborativa: sessionId })
         });
-        console.log('Sesión colaborativa finalizada');
         
-        // Show popup of thanks
+        if (!finalizeResponse.ok) {
+          console.error('Error al finalizar sesión:', await finalizeResponse.text());
+        } else {
+          console.log('Sesión finalizada exitosamente');
+        }
+        
         setShowPopup(true);
         
-        // After showing the popup for a few seconds, redirect to the Share phase
         setTimeout(() => {
           router.push('/share');
         }, 3000);
       } catch (error) {
         console.error('Error al finalizar sesión colaborativa:', error);
+        
+        // Intentamos redireccionar de todas formas
+        setTimeout(() => {
+          router.push('/share');
+        }, 3000);
       }
-    }
-    else {
+    } else {
       console.error('No se pudo finalizar sesión colaborativa. sessionId no existe');
-      // Still try to redirect to the Share phase
       setTimeout(() => {
         router.push('/share');
       }, 3000);
     }
-  }, [sessionId, doc, router]);
+  }, [sessionId, doc, provider, router]);
 
   useEffect(() => {
     // Get data from cookies

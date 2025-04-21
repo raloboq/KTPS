@@ -1,4 +1,4 @@
-// src/app/api/obtener-datos-share/route.ts
+// src/app/api/obtener-datos-share/route.ts - VERSIÓN CORREGIDA
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 
@@ -11,6 +11,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log(`Obteniendo datos para room_id: ${roomId}`);
+    
     // Paso 1: Obtener id_sesion_colaborativa correspondiente al roomId
     const sesionResult = await pool.query(
       `SELECT id_sesion_colaborativa, tema, fecha_inicio 
@@ -21,12 +23,27 @@ export async function GET(request: Request) {
       [roomId]
     );
 
+    console.log(`Resultado sesiones_colaborativas:`, sesionResult.rows);
+
     if (sesionResult.rows.length === 0) {
-      return NextResponse.json({ success: false, error: 'Sesión colaborativa no encontrada' }, { status: 404 });
+      // Si no encontramos sesión colaborativa, devolvemos datos vacíos pero success true
+      return NextResponse.json({ 
+        success: true,
+        colaboracion: {
+          id: parseInt(roomId),
+          roomName: "Sala No Encontrada",
+          content: "No se encontró contenido para esta sala",
+          timestamp: new Date().toISOString(),
+          participants: []
+        },
+        reflexiones: []
+      });
     }
 
     const sesionData = sesionResult.rows[0];
     const id_sesion_colaborativa = sesionData.id_sesion_colaborativa;
+    
+    console.log(`ID sesión colaborativa encontrada: ${id_sesion_colaborativa}`);
 
     // Paso 2: Obtener la última captura de contenido colaborativo
     const capturaResult = await pool.query(
@@ -37,6 +54,8 @@ export async function GET(request: Request) {
        LIMIT 1`,
       [id_sesion_colaborativa]
     );
+
+    console.log(`Resultado capturas_contenido_colaborativo:`, capturaResult.rows);
 
     let contenidoColaborativo = '';
     let timestampColaborativo = new Date();
@@ -54,33 +73,57 @@ export async function GET(request: Request) {
       [id_sesion_colaborativa]
     );
 
-    const participantes = participantesResult.rows.map(p => ({
-      nombre: p.nombre_usuario,
-      fecha_union: p.fecha_union,
-      fecha_salida: p.fecha_salida
-    }));
+    console.log(`Resultado participantes_colaborativos:`, participantesResult.rows);
 
-    // Paso 4: Obtener reflexiones individuales relacionadas con esta sala
-    // Como las reflexiones están en otra tabla, necesitamos relacionar por usuario
+    const participantes = participantesResult.rows.map(p => p.nombre_usuario);
+
+    // Paso 4: Obtener reflexiones individuales
     const reflexionesIndividuales = [];
     
-    for (const participante of participantes) {
-      const reflexionResult = await pool.query(
-        `SELECT r.id_reflexion, r.contenido, r.fecha_creacion, r.usuario
-         FROM reflexiones r
-         JOIN sesiones s ON r.id_sesion = s.id_sesion
-         WHERE r.usuario = $1
-         ORDER BY r.fecha_creacion DESC
-         LIMIT 1`,
-        [participante.nombre]
+    // Si tenemos participantes, buscamos sus reflexiones
+    if (participantes.length > 0) {
+      for (const nombreUsuario of participantes) {
+        console.log(`Buscando reflexión para: ${nombreUsuario}`);
+        
+        const reflexionResult = await pool.query(
+          `SELECT id_reflexion, contenido, fecha_creacion, usuario
+           FROM reflexiones
+           WHERE usuario = $1
+           ORDER BY fecha_creacion DESC
+           LIMIT 1`,
+          [nombreUsuario]
+        );
+        
+        console.log(`Resultado reflexiones para ${nombreUsuario}:`, reflexionResult.rows);
+        
+        if (reflexionResult.rows.length > 0) {
+          reflexionesIndividuales.push({
+            id: reflexionResult.rows[0].id_reflexion,
+            userName: reflexionResult.rows[0].usuario,
+            content: reflexionResult.rows[0].contenido,
+            timestamp: reflexionResult.rows[0].fecha_creacion
+          });
+        }
+      }
+    } else {
+      // Si no hay participantes identificados, intentamos obtener reflexiones directamente
+      console.log('No hay participantes, buscando reflexiones directamente');
+      
+      const reflexionesResult = await pool.query(
+        `SELECT id_reflexion, contenido, fecha_creacion, usuario
+         FROM reflexiones 
+         ORDER BY fecha_creacion DESC 
+         LIMIT 5`
       );
       
-      if (reflexionResult.rows.length > 0) {
+      console.log(`Resultado reflexiones generales:`, reflexionesResult.rows);
+      
+      for (const row of reflexionesResult.rows) {
         reflexionesIndividuales.push({
-          id: reflexionResult.rows[0].id_reflexion,
-          userName: reflexionResult.rows[0].usuario,
-          content: reflexionResult.rows[0].contenido,
-          timestamp: reflexionResult.rows[0].fecha_creacion
+          id: row.id_reflexion,
+          userName: row.usuario,
+          content: row.contenido,
+          timestamp: row.fecha_creacion
         });
       }
     }
@@ -93,7 +136,7 @@ export async function GET(request: Request) {
         roomName: sesionData.tema,
         content: contenidoColaborativo,
         timestamp: timestampColaborativo,
-        participants: participantes.map(p => p.nombre)
+        participants: participantes
       },
       reflexiones: reflexionesIndividuales
     });
@@ -101,7 +144,8 @@ export async function GET(request: Request) {
     console.error('Error al obtener datos para la fase share:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Error al obtener los datos necesarios para la fase share' 
+      error: 'Error al obtener los datos necesarios para la fase share',
+      details: error instanceof Error ? error.message : 'Error desconocido'
     }, { status: 500 });
   }
 }
