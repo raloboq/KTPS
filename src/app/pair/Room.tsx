@@ -513,6 +513,19 @@ export function Room({ children }: RoomProps) {
   const finalizarSesionColaborativa = useCallback(async () => {
     if (sessionId) {
       try {
+        // Primero capturar el contenido final del documento colaborativo
+      const textContent = doc?.getText('content')?.toString() || '';
+      
+      // Guardar el contenido final
+      await fetch('/api/capturar-contenido-colaborativo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id_sesion_colaborativa: sessionId,
+          contenido: textContent 
+        })
+      });
+      // Y luego finalizar la sesión como ya lo hace
         await fetch('/api/finalizar-sesion-colaborativa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -538,7 +551,7 @@ export function Room({ children }: RoomProps) {
         router.push('/share');
       }, 3000);
     }
-  }, [sessionId, router]);
+  }, [sessionId, doc, router]);
 
   useEffect(() => {
     // Get data from cookies
