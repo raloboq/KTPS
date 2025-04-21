@@ -513,6 +513,21 @@ export function Room({ children }: RoomProps) {
   const finalizarSesionColaborativa = useCallback(async () => {
     if (sessionId) {
       try {
+        // Registrar la salida del participante actual
+      if (userName) {
+        try {
+          await fetch('/api/registrar-salida-participante', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id_sesion_colaborativa: sessionId,
+              nombre_usuario: userName
+            })
+          });
+        } catch (e) {
+          console.error('Error al registrar salida del participante:', e);
+        }
+      }
         // Obtener el contenido actual del documento colaborativo
         let documentContent = '';
         
@@ -728,15 +743,37 @@ export function Room({ children }: RoomProps) {
   // Initialize collaborative session
   const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
     try {
+      // Iniciar la sesión colaborativa
       const response = await fetch('/api/iniciar-sesion-colaborativa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_room, tema })
       });
+      
       const data = await response.json();
-      setSessionId(data.id_sesion_colaborativa);
-    } catch (error) {
-      console.error('Error al iniciar sesión colaborativa:', error);
+      const sessionId = data.id_sesion_colaborativa;
+      setSessionId(sessionId);
+      
+      // Registrar al participante actual
+      if (sessionId && userName) {
+        const participanteResponse = await fetch('/api/registrar-participante', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_sesion_colaborativa: sessionId,
+            nombre_usuario: userName
+          })
+        });
+        
+        if (!participanteResponse.ok) {
+          console.error('Error al registrar participante:', await participanteResponse.text());
+        }
+      }
+      
+      return sessionId;
+    } catch (err) {
+      console.error('Error iniciando sesión colaborativa:', err);
+      return null;
     }
   };
 
