@@ -347,12 +347,12 @@ export async function GET(
     // Preparar la respuesta con los datos consultados
     const statsData = {
       totalSessions: parseInt(generalStats.rows[0]?.total_sessions || '0'),
-      totalStudents: parseInt(generalStats.rows[0]?.total_students || '0'),
-      avgThinkTime: parseFloat(generalStats.rows[0]?.avg_think_time || '0').toFixed(1),
-      avgPairTime: parseFloat(generalStats.rows[0]?.avg_pair_time || '0').toFixed(1),
-      avgShareTime: parseFloat(generalStats.rows[0]?.avg_share_time || '0').toFixed(1),
-      completionRate: parseFloat(completionRate.rows[0]?.completion_rate || '0'),
-      phaseStats: {
+  totalStudents: parseInt(generalStats.rows[0]?.total_students || '0'),
+  avgThinkTime: parseFloat(generalStats.rows[0]?.avg_think_time || '0'),
+  avgPairTime: parseFloat(generalStats.rows[0]?.avg_pair_time || '0'),
+  avgShareTime: parseFloat(generalStats.rows[0]?.avg_share_time || '0'),
+  completionRate: parseFloat(completionRate.rows[0]?.completion_rate || '0'),
+  phaseStats: {
         think: {
           averageLength: parseInt(thinkStats.rows[0]?.average_length || '0'),
           participationRate: parseFloat(thinkStats.rows[0]?.participation_rate || '0'),
