@@ -279,9 +279,10 @@ interface PhaseStats {
     mostCommonTopic: string;
   };
   pair: {
-    averageCollaborationTime: number;
+    averageCollaborationTime: number | string; // Permitir string para manejar el caso del API
     messageCount: number;
     documentChanges: number;
+    documentLength?: number;
   };
   share: {
     presentationLength: number;
@@ -366,6 +367,15 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
     alert('Funcionalidad de exportación de datos en desarrollo');
   };
 
+  // Función auxiliar para formatear números
+  const formatNumber = (value: number | string): string => {
+    if (typeof value === 'string') {
+      const parsedValue = parseFloat(value);
+      return isNaN(parsedValue) ? '0.0' : parsedValue.toFixed(1);
+    }
+    return value.toFixed(1);
+  };
+
   if (loading) {
     return <div className={styles.loading}>Cargando estadísticas...</div>;
   }
@@ -408,7 +418,7 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
             <div className={styles.timeStats}>
               <div className={styles.timeStat}>
                 <div className={styles.timeStatLabel}>Fase Think</div>
-                <div className={styles.timeStatValue}>{stats.avgThinkTime.toFixed(1)} min</div>
+                <div className={styles.timeStatValue}>{formatNumber(stats.avgThinkTime)} min</div>
                 <div className={styles.timeStatBar}>
                   <div 
                     className={styles.timeStatBarFill} 
@@ -418,7 +428,7 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
               </div>
               <div className={styles.timeStat}>
                 <div className={styles.timeStatLabel}>Fase Pair</div>
-                <div className={styles.timeStatValue}>{stats.avgPairTime.toFixed(1)} min</div>
+                <div className={styles.timeStatValue}>{formatNumber(stats.avgPairTime)} min</div>
                 <div className={styles.timeStatBar}>
                   <div 
                     className={styles.timeStatBarFill} 
@@ -428,7 +438,7 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
               </div>
               <div className={styles.timeStat}>
                 <div className={styles.timeStatLabel}>Fase Share</div>
-                <div className={styles.timeStatValue}>{stats.avgShareTime.toFixed(1)} min</div>
+                <div className={styles.timeStatValue}>{formatNumber(stats.avgShareTime)} min</div>
                 <div className={styles.timeStatBar}>
                   <div 
                     className={styles.timeStatBarFill} 
@@ -453,9 +463,10 @@ export default function StatsPanel({ configId, onBack }: StatsPanelProps) {
                 
                 <div className={styles.phaseStatCard}>
                   <h4>Fase Pair</h4>
-                  <p><strong>Tiempo de colaboración:</strong> {stats.phaseStats.pair.averageCollaborationTime.toFixed(1)} min</p>
+                  <p><strong>Tiempo de colaboración:</strong> {formatNumber(stats.phaseStats.pair.averageCollaborationTime)} min</p>
                   <p><strong>Mensajes promedio:</strong> {stats.phaseStats.pair.messageCount}</p>
-                  <p><strong>Cambios en documentos:</strong> {stats.phaseStats.pair.documentChanges}</p>
+                  {/* Cambiar documentChanges por documentLength si ese es el nombre correcto */}
+                  <p><strong>Longitud del documento:</strong> {stats.phaseStats.pair.documentLength || stats.phaseStats.pair.documentChanges || 0}</p>
                 </div>
                 
                 <div className={styles.phaseStatCard}>
