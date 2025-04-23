@@ -571,13 +571,19 @@ export default function ThinkPage() {
       if (!data.success) {
         throw new Error(data.error || 'Failed to load activity data');
       }
+
+      // Asegúrate de extraer también el tps_configuration_id
+    const configId = data.room.tps_configuration_id || data.room.configuration_id;
+    console.log("Configuration ID encontrado:", configId);
+    
       
       // Get the configuration from the response
       return {
         think_phase_instructions: data.room.think_phase_instructions,
         think_phase_duration: data.room.think_phase_duration,
         assignment_name: data.room.activity_name,
-        course_name: data.room.course_name || 'Course'
+        course_name: data.room.course_name || 'Course',
+        tps_configuration_id: configId
       };
     } catch (error) {
       console.error('Error fetching activity configuration:', error);
@@ -659,7 +665,11 @@ export default function ThinkPage() {
                 const data = await response.json();
                 if (data.success && data.room) {
                   // Si tenemos la información en el response, extraer el configuration_id
-                  tpsConfigurationId = data.room.configuration_id || null;
+                 // Buscar en múltiples lugares posibles
+        tpsConfigurationId = data.room.tps_configuration_id || 
+        data.room.configuration_id || 
+        null;
+        console.log('tps_configuration_id encontrado:', tpsConfigurationId);
                 }
               }
             } catch (configError) {
@@ -670,7 +680,7 @@ export default function ThinkPage() {
           const id_sesion = await iniciarSesion(
             studentUsername, 
             config?.assignment_name || 'Think-Pair-Share Activity',
-            tpsConfigurationId // Pasar el tps_configuration_id
+            config?.tps_configuration_id || tpsConfigurationId // Usa la configuración o el valor recuperado directamente
           );
           
           setSessionId(id_sesion);

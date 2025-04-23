@@ -19,7 +19,7 @@ export async function iniciarSesion(alias: string, tema: string) {
 import { pool } from '@/lib/db';
 
 export async function iniciarSesion(alias: string, tema: string, tps_configuration_id?: number) {
-  console.log("iniciarSesion");
+  console.log("iniciarSesion", { alias, tema, tps_configuration_id }); // Log para depuración
   
   try {
     // Query modificada para incluir tps_configuration_id
