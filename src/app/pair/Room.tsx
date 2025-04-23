@@ -745,6 +745,7 @@ export function Room({ children }: RoomProps) {
     try {
       // Obtener el activityId de las cookies
     const activityId = Cookies.get('activityId');
+    const userNameFromCookie = Cookies.get('studentUsername');
       console.log('Iniciando sesión colaborativa:', { id_room, tema });
       
       // Iniciar la sesión colaborativa
@@ -772,7 +773,7 @@ export function Room({ children }: RoomProps) {
       setSessionId(sessionId);
       
       // Registro explícito del participante actual
-      if (userName) {
+      if (userNameFromCookie) {
         console.log('Registrando participante:', { sessionId, userName });
         
         try {
