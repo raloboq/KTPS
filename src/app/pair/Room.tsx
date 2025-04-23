@@ -774,7 +774,7 @@ export function Room({ children }: RoomProps) {
       
       // Registro explícito del participante actual
       if (userNameFromCookie) {
-        console.log('Registrando participante:', { sessionId, userName });
+        console.log('Registrando participante:', { sessionId, userNameFromCookie });
         
         try {
           const participanteResponse = await fetch('/api/registrar-participante', {
@@ -782,7 +782,7 @@ export function Room({ children }: RoomProps) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id_sesion_colaborativa: sessionId,
-              nombre_usuario: userName
+              nombre_usuario: userNameFromCookie
             })
           });
           
