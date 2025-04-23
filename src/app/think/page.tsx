@@ -513,6 +513,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import styles from './thinkPage.module.css';
 import { iniciarSesion } from '../api/sesiones';
+import { finalizarSesion } from '../api/sesiones';
 import { registrarInteraccion } from '../api/interacciones';
 import { guardarReflexion } from '../api/reflexiones';
 
@@ -614,6 +615,7 @@ export default function ThinkPage() {
         const studentUsername = Cookies.get('studentUsername');
         const roomIdFromCookie = Cookies.get('roomId');
         const roomNameFromCookie = Cookies.get('roomName');
+        const activityIdFromCookie = Cookies.get('activityId');
         
         if (studentUsername) {
           setAlias(studentUsername);
@@ -630,7 +632,7 @@ export default function ThinkPage() {
         if (roomNameFromCookie) {
           setRoomName(roomNameFromCookie);
         }
-
+    
         // Fetch the activity configuration
         const config = await fetchActivityConfiguration();
         
@@ -645,10 +647,32 @@ export default function ThinkPage() {
         
         // Initialize session
         if (studentUsername) {
+          // Obtener el tps_configuration_id
+          let tpsConfigurationId = null;
+          
+          // Intentar obtener el tps_configuration_id del response de fetchActivityConfiguration
+          // O consultar directamente si tenemos el activityId
+          if (activityIdFromCookie) {
+            try {
+              const response = await fetch(`/api/student/check-room-status`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.room) {
+                  // Si tenemos la información en el response, extraer el configuration_id
+                  tpsConfigurationId = data.room.configuration_id || null;
+                }
+              }
+            } catch (configError) {
+              console.error('Error al obtener tps_configuration_id:', configError);
+            }
+          }
+          
           const id_sesion = await iniciarSesion(
             studentUsername, 
-            config?.assignment_name || 'Think-Pair-Share Activity'
+            config?.assignment_name || 'Think-Pair-Share Activity',
+            tpsConfigurationId // Pasar el tps_configuration_id
           );
+          
           setSessionId(id_sesion);
           queueInteraction('inicio_sesion', { alias: studentUsername });
         }
@@ -773,6 +797,16 @@ export default function ThinkPage() {
       queueInteraction('envío', { contenido_final: thought });
       await sendInteractions();
       
+      // Finalizar la sesión si tenemos un sessionId
+    if (sessionId) {
+      try {
+        await finalizarSesion(sessionId);
+        console.log('Sesión finalizada exitosamente');
+      } catch (finishError) {
+        console.error('Error al finalizar sesión:', finishError);
+      }
+    }
+
       // Save the reflection if we have sessionId
       if (sessionId && alias) {
         try {
