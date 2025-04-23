@@ -130,6 +130,7 @@ export async function GET() {
         pr.is_full,
         aa.id as activity_id,
         aa.name as activity_name,
+        tc.id as tps_configuration_id,
         tc.think_phase_duration,
         tc.think_phase_instructions,
         tc.pair_phase_duration,

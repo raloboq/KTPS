@@ -623,6 +623,10 @@ export default function ThinkPage() {
         const roomNameFromCookie = Cookies.get('roomName');
         const activityIdFromCookie = Cookies.get('activityId');
         
+        console.log("roomId:", roomIdFromCookie);
+        console.log("roomName:", roomNameFromCookie);
+        console.log("activityId:", activityIdFromCookie);
+        
         if (studentUsername) {
           setAlias(studentUsername);
         } else {
@@ -639,12 +643,31 @@ export default function ThinkPage() {
           setRoomName(roomNameFromCookie);
         }
     
+        // Obtener explícitamente el tps_configuration_id
+        let tpsConfigurationId = null;
+        
+        if (activityIdFromCookie) {
+          try {
+            // Usar el nuevo endpoint específico
+            const configResponse = await fetch(`/api/student/get-config-id?activityId=${activityIdFromCookie}&roomId=${roomIdFromCookie}`);
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              if (configData.success && configData.config_id) {
+                tpsConfigurationId = configData.config_id;
+                console.log("tps_configuration_id obtenido directamente:", tpsConfigurationId);
+              }
+            }
+          } catch (configError) {
+            console.error('Error al obtener tps_configuration_id:', configError);
+          }
+        }
+        
         // Fetch the activity configuration
         const config = await fetchActivityConfiguration();
         
         if (config) {
           setActivityConfig(config);
-          // Set timer based on the configuration (converting seconds to minutes)
+          // Set timer based on the configuration
           setTimeRemaining(config.think_phase_duration);
         } else {
           // Use default values if configuration not available
@@ -653,36 +676,19 @@ export default function ThinkPage() {
         
         // Initialize session
         if (studentUsername) {
-          // Obtener el tps_configuration_id
-          let tpsConfigurationId = null;
-          
-          // Intentar obtener el tps_configuration_id del response de fetchActivityConfiguration
-          // O consultar directamente si tenemos el activityId
-          if (activityIdFromCookie) {
-            try {
-              const response = await fetch(`/api/student/check-room-status`);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.room) {
-                  // Si tenemos la información en el response, extraer el configuration_id
-                 // Buscar en múltiples lugares posibles
-        tpsConfigurationId = data.room.tps_configuration_id || 
-        data.room.configuration_id || 
-        null;
-        console.log('tps_configuration_id encontrado:', tpsConfigurationId);
-                }
-              }
-            } catch (configError) {
-              console.error('Error al obtener tps_configuration_id:', configError);
-            }
-          }
+          console.log("Iniciando sesión con params:", {
+            usuario: studentUsername,
+            tema: config?.assignment_name || 'Think-Pair-Share Activity',
+            tps_configuration_id: tpsConfigurationId
+          });
           
           const id_sesion = await iniciarSesion(
             studentUsername, 
             config?.assignment_name || 'Think-Pair-Share Activity',
-            config?.tps_configuration_id || tpsConfigurationId // Usa la configuración o el valor recuperado directamente
+            tpsConfigurationId 
           );
           
+          console.log("Sesión iniciada con ID:", id_sesion);
           setSessionId(id_sesion);
           queueInteraction('inicio_sesion', { alias: studentUsername });
         }
