@@ -743,34 +743,60 @@ export function Room({ children }: RoomProps) {
   // Initialize collaborative session
   const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
     try {
-          // Obtener el activityId de las cookies
+      // Obtener el activityId de las cookies
     const activityId = Cookies.get('activityId');
-
+      console.log('Iniciando sesión colaborativa:', { id_room, tema });
+      
       // Iniciar la sesión colaborativa
       const response = await fetch('/api/iniciar-sesion-colaborativa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_room, tema, activityId })
+        body: JSON.stringify({ id_room, tema, activityId  })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error en respuesta de iniciar-sesion-colaborativa:', errorText);
+        throw new Error(`Error en la respuesta del servidor: ${response.status} ${errorText}`);
+      }
       
       const data = await response.json();
       const sessionId = data.id_sesion_colaborativa;
+      console.log('Sesión colaborativa iniciada con ID:', sessionId);
+      
+      if (!sessionId) {
+        console.error('No se recibió un ID de sesión colaborativa válido');
+        return null;
+      }
+      
       setSessionId(sessionId);
       
-      // Registrar al participante actual
-      if (sessionId && userName) {
-        const participanteResponse = await fetch('/api/registrar-participante', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id_sesion_colaborativa: sessionId,
-            nombre_usuario: userName
-          })
-        });
+      // Registro explícito del participante actual
+      if (userName) {
+        console.log('Registrando participante:', { sessionId, userName });
         
-        if (!participanteResponse.ok) {
-          console.error('Error al registrar participante:', await participanteResponse.text());
+        try {
+          const participanteResponse = await fetch('/api/registrar-participante', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id_sesion_colaborativa: sessionId,
+              nombre_usuario: userName
+            })
+          });
+          
+          if (!participanteResponse.ok) {
+            const errorText = await participanteResponse.text();
+            console.error('Error al registrar participante:', errorText);
+          } else {
+            const participanteData = await participanteResponse.json();
+            console.log('Participante registrado:', participanteData);
+          }
+        } catch (participanteError) {
+          console.error('Excepción al registrar participante:', participanteError);
         }
+      } else {
+        console.error('No se pudo registrar participante: userName es null o vacío');
       }
       
       return sessionId;
