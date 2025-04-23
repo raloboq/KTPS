@@ -743,11 +743,14 @@ export function Room({ children }: RoomProps) {
   // Initialize collaborative session
   const iniciarSesionColaborativa = async (id_room: string, tema: string) => {
     try {
+          // Obtener el activityId de las cookies
+    const activityId = Cookies.get('activityId');
+
       // Iniciar la sesión colaborativa
       const response = await fetch('/api/iniciar-sesion-colaborativa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_room, tema })
+        body: JSON.stringify({ id_room, tema, activityId })
       });
       
       const data = await response.json();
