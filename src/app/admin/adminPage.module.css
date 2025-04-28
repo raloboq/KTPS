@@ -1015,3 +1015,275 @@
     text-align: left;
   }
 }
+
+/* Añadir estos estilos al archivo adminPage.module.css */
+
+.gradingContainer {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gradingTitle {
+  color: #662483;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.activityInfo {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.activityInfo p {
+  margin: 5px 0;
+}
+
+.tabsContainer {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tabButton {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  border-bottom: 3px solid transparent;
+}
+
+.tabButton:hover {
+  color: #662483;
+}
+
+.activeTab {
+  color: #662483;
+  border-bottom: 3px solid #662483;
+  font-weight: bold;
+}
+
+.gradingTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.gradingTable th, .gradingTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.gradingTable th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+  color: #333;
+}
+
+.reflectionContent {
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.gradeButton {
+  background-color: #E6007E;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.gradeButton:hover {
+  background-color: #662483;
+}
+
+.collaborationCard {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.collaborationHeader {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+.collaborationHeader h4 {
+  margin-top: 0;
+  color: #662483;
+}
+
+.collaborationContent {
+  padding: 15px;
+}
+
+.contentBox {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 30px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #666;
+}
+
+.gradeFormOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.gradeForm {
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.gradeForm h3 {
+  margin-top: 0;
+  color: #662483;
+  margin-bottom: 20px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.gradeInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.commentInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancelButton {
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submitButton {
+  padding: 10px 15px;
+  background-color: #E6007E;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background-color: #662483;
+}
+
+.submitButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  background-color: #ffe6e6;
+  color: #c00;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.successMessage {
+  background-color: #e6ffe6;
+  color: #0a0;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.loadingSpinner:after {
+  content: " ";
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 6px solid #662483;
+  border-color: #662483 transparent #662483 transparent;
+  animation: loadingSpinner 1.2s linear infinite;
+}
+
+@keyframes loadingSpinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
