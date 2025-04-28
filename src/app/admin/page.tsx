@@ -378,7 +378,7 @@ export default function AdminPage() {
             <ConfigurationList 
               onEditConfig={handleEditConfig}
               onViewStats={handleViewStats}
-              onViewGrading={handleViewGrading}
+              onViewGrading={handleViewGrading as any}
             />
           </>
         )}
