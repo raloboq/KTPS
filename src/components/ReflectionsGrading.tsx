@@ -15,6 +15,19 @@ interface GradeData {
   isCollaborative: boolean;
 }
 
+// Función para formatear el contenido Tiptap a HTML estándar
+const formatTiptapContent = (content: string): string => {
+  if (!content) return '';
+  
+  // Reemplaza las etiquetas <paragraph> con <p>
+  let formatted = content.replace(/<paragraph>/g, '<p>').replace(/<\/paragraph>/g, '</p>');
+  
+  // Maneja correctamente los saltos de línea
+  formatted = formatted.replace(/<hardbreak><\/hardbreak>/g, '<br/>');
+  
+  return formatted;
+};
+
 export default function ReflectionsGrading({ configId }: { configId: number }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -202,9 +215,12 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
                       <td>{participant.userName}</td>
                       <td>{new Date(participant.reflexion.createdAt).toLocaleString()}</td>
                       <td>
-                        <div className={styles.reflectionContent}>
-                          {participant.reflexion.content}
-                        </div>
+                        <div 
+                          className={styles.reflectionContent}
+                          dangerouslySetInnerHTML={{ 
+                            __html: formatTiptapContent(participant.reflexion.content as string) 
+                          }}
+                        />
                       </td>
                       <td>
                         {participant.reflexion.calificacion !== null 
@@ -263,9 +279,12 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
               {session.collaboration && (
                 <div className={styles.collaborationContent}>
                   <h5>Contenido Colaborativo:</h5>
-                  <div className={styles.contentBox}>
-                    {session.collaboration.content}
-                  </div>
+                  <div 
+                    className={styles.contentBox}
+                    dangerouslySetInnerHTML={{ 
+                      __html: formatTiptapContent(session.collaboration.content as string) 
+                    }}
+                  />
                   
                   <div className={styles.actionButtons}>
                     <button 

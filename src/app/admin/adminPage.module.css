@@ -1287,3 +1287,37 @@
     transform: rotate(360deg);
   }
 }
+
+.reflectionContent, .contentBox {
+  text-align: left;
+  line-height: 1.5;
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  margin-bottom: 15px;
+  overflow-wrap: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.reflectionContent p, .contentBox p {
+  margin-bottom: 10px;
+}
+
+.reflectionContent strong, .contentBox strong {
+  font-weight: bold;
+}
+
+.reflectionContent em, .contentBox em {
+  font-style: italic;
+}
+
+.reflectionContent s, .contentBox s {
+  text-decoration: line-through;
+}
+
+.reflectionContent br, .contentBox br {
+  display: block;
+  margin-bottom: 5px;
+}
