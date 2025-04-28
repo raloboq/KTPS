@@ -256,7 +256,7 @@ import ActivityManagement from './ActivityManagement';
 interface ConfigListProps {
   onEditConfig: (configId: number) => void;
   onViewStats: (configId: number) => void;
-  onViewGrading?: (configId: number) => void;
+  onViewGrading: (configId: number) => void;
 }
 
 export default function ConfigurationList({ onEditConfig, onViewStats, onViewGrading }: ConfigListProps) {
@@ -472,12 +472,12 @@ export default function ConfigurationList({ onEditConfig, onViewStats, onViewGra
                         Estadísticas
                       </button>
                       <button 
-  onClick={() => onViewGrading?.(config.id)}
-  className={styles.gradingButton}
-  title="Calificar"
->
-  Calificar
-</button>
+    onClick={() => onViewGrading(config.id)}
+    className={styles.gradingButton || styles.linkButton} // Usar el estilo existente o uno nuevo
+    title="Calificar reflexiones"
+  >
+    Calificar
+  </button>
                     </td>
                   </tr>
                   {expandedActivityConfig === config.id && (
