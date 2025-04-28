@@ -214,7 +214,8 @@ import LogoutButton from '@/components/LogoutButton';
 import ConfigurationList from '@/components/ConfigurationList';
 import ConfigurationForm from '@/components/ConfigurationForm';
 import StatsPanel from '@/components/StatsPanel';
-import ReflectionsGradingPanel from '@/components/ReflectionsGrading';
+import ReflectionsGrading from "@/components/ReflectionsGrading";
+//import ReflectionsGradingPanel from '@/components/ReflectionsGrading';
 import { checkExistingConfiguration } from '@/services/tps-config.service';
 
 type AdminView = 'list' | 'create' | 'edit' | 'stats' | 'grading';
@@ -412,6 +413,13 @@ export default function AdminPage() {
             onBack={handleCancel}
           />
         )}
+
+{view === 'grading' && selectedConfigId && (
+  <ReflectionsGrading
+    configId={selectedConfigId}
+    //onBack={handleCancel}
+  />
+)}
 
         
       </div>
