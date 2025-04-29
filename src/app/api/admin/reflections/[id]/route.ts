@@ -36,7 +36,7 @@ export async function GET(
       [configId, userId]
     );
 
-    if (configCheck.rowCount === 0) {
+    if (!configCheck.rowCount || configCheck.rowCount === 0) {
       return NextResponse.json({ 
         success: false, 
         error: 'Configuración no encontrada o no autorizada' 
@@ -57,15 +57,8 @@ export async function GET(
     for (const sesion of sessionesResult.rows) {
       // Obtener participantes
       const participantesResult = await pool.query(
-        `SELECT pc.id_participante, pc.nombre_usuario, pc.fecha_union, pc.fecha_salida, 
-                s.studentId as moodle_user_id
+        `SELECT pc.id_participante, pc.nombre_usuario, pc.fecha_union, pc.fecha_salida
          FROM participantes_colaborativos pc
-         LEFT JOIN (
-           SELECT nombre_usuario, studentId 
-           FROM student_sessions 
-           WHERE nombre_usuario IS NOT NULL AND studentId IS NOT NULL
-           GROUP BY nombre_usuario, studentId
-         ) s ON pc.nombre_usuario = s.nombre_usuario
          WHERE pc.id_sesion_colaborativa = $1`,
         [sesion.id_sesion_colaborativa]
       );
@@ -87,29 +80,34 @@ export async function GET(
         // Buscar la reflexión del participante
         const reflexionResult = await pool.query(
           `SELECT r.id_reflexion, r.contenido, r.fecha_creacion, s.id_sesion, 
-                  g.nota as calificacion, g.comentario,
-                  ss.studentId as moodle_user_id
+                  g.nota as calificacion, g.comentario
            FROM reflexiones r
            JOIN sesiones s ON r.id_sesion = s.id_sesion
            LEFT JOIN gradebook g ON r.id_reflexion = g.id_reflexion
-           LEFT JOIN (
-             SELECT nombre_usuario, studentId 
-             FROM student_sessions 
-             WHERE nombre_usuario IS NOT NULL AND studentId IS NOT NULL
-             GROUP BY nombre_usuario, studentId
-           ) ss ON r.usuario = ss.nombre_usuario
            WHERE r.usuario = $1 AND s.tps_configuration_id = $2
            ORDER BY r.fecha_creacion DESC
            LIMIT 1`,
           [participante.nombre_usuario, configId]
         );
         
-        // Intentar obtener el moodle_user_id ya sea de la consulta reflexión o del participante
-        const moodleUserId = reflexionResult.rows.length > 0 && reflexionResult.rows[0].moodle_user_id
-          ? reflexionResult.rows[0].moodle_user_id 
-          : participante.moodle_user_id;
+        // Buscar el ID de Moodle del estudiante
+        const moodleUserResult = await pool.query(
+          `SELECT moodle_user_id 
+           FROM student_users 
+           WHERE username = $1 OR email = $1 OR fullname = $1
+           LIMIT 1`,
+          [participante.nombre_usuario]
+        );
         
-        const reflexion = reflexionResult.rows.length > 0 ? {
+        // Manejar de forma segura el rowCount que podría ser null
+        const moodleUserId = moodleUserResult && 
+                             moodleUserResult.rowCount && 
+                             moodleUserResult.rowCount > 0 ? 
+                               moodleUserResult.rows[0].moodle_user_id : null;
+        
+        const reflexion = reflexionResult && 
+                         reflexionResult.rowCount && 
+                         reflexionResult.rowCount > 0 ? {
           id: reflexionResult.rows[0].id_reflexion,
           content: reflexionResult.rows[0].contenido,
           createdAt: reflexionResult.rows[0].fecha_creacion,
@@ -136,7 +134,9 @@ export async function GET(
         [sesion.id_sesion_colaborativa]
       );
       
-      const calificacion = gradingResult.rows.length > 0 ? {
+      const calificacion = gradingResult && 
+                           gradingResult.rowCount && 
+                           gradingResult.rowCount > 0 ? {
         nota: gradingResult.rows[0].nota,
         comentario: gradingResult.rows[0].comentario
       } : null;
@@ -156,7 +156,9 @@ export async function GET(
         endedAt: sesion.fecha_fin,
         participants: participantes,
         primaryMoodleUserId: primaryMoodleUserId,  // Agregar el ID principal para calificación colaborativa
-        collaboration: capturaResult.rows.length > 0 ? {
+        collaboration: capturaResult && 
+                      capturaResult.rowCount && 
+                      capturaResult.rowCount > 0 ? {
           id: capturaResult.rows[0].id_captura,
           content: capturaResult.rows[0].contenido,
           timestamp: capturaResult.rows[0].timestamp
@@ -188,19 +190,10 @@ export async function GET(
       [configId]
     );
     
-    const activityInfo = activityResult.rows.length > 0 ? activityResult.rows[0] : null;
-    
-    // Agregar información de depuración para ver la estructura completa
-    console.log('Enviando datos de actividad:', JSON.stringify({
-      activity: activityInfo,
-      sessions: sesiones.map(s => ({
-        ...s,
-        participants: s.participants.map(p => ({
-          ...p,
-          moodleUserId: p.moodleUserId
-        }))
-      }))
-    }, null, 2));
+    const activityInfo = activityResult && 
+                        activityResult.rowCount && 
+                        activityResult.rowCount > 0 ? 
+                          activityResult.rows[0] : null;
     
     return NextResponse.json({ 
       success: true, 
