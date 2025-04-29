@@ -536,8 +536,8 @@ export async function POST(request: Request) {
         assignmentid: String(moodleAssignmentId),
         'grades[0][userid]':  String(studentId),
         'grades[0][grade]':   String(numericGrade),
-        'grades[0][attemptnumber]': '1',
-        'grades[0][addattempt]':    '0',
+        'grades[0][attemptnumber]': '-1',
+        'grades[0][addattempt]':    '1',
         'grades[0][workflowstate]': 'graded',
         applytoall: '0'
       });
