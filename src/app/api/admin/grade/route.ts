@@ -379,14 +379,243 @@ export const dynamic = 'force-dynamic';
     `mod_assign_save_grades`.  Cumple con la restricción CHECK de la tabla
     (exactamente uno de los dos IDs debe ser NULL).
 */
-
-import { NextResponse } from 'next/server';
+// src/app/api/admin/grade/route.ts
+/*import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';   // Next 13+: siempre SSR
 
 type MoodleSyncResult = { success: boolean; message: string } | null;
+
+export async function POST(request: Request) {
+  const client = await pool.connect();
+
+  try {
+   
+    const cookieStore   = cookies();
+    const moodleToken   = cookieStore.get('moodleToken')?.value;
+    const moodleUserId  = Number(cookieStore.get('moodleUserId')?.value);
+
+    if (!moodleToken || Number.isNaN(moodleUserId)) {
+      return NextResponse.json(
+        { success: false, error: 'Usuario no autenticado' },
+        { status: 401 }
+      );
+    }
+
+   
+    const {
+      configId,
+      sessionId,            // id_sesion_colaborativa
+      reflexionId,          // id_reflexion
+      studentId,
+      moodleAssignmentId,
+      grade,
+      comment,
+      isCollaborative
+    } = await request.json();
+
+    
+    if (!configId || grade == null) {
+      return NextResponse.json(
+        { success: false, error: 'Faltan datos requeridos (configId o grade)' },
+        { status: 400 }
+      );
+    }
+
+    const numericGrade = Number(grade);
+    if (Number.isNaN(numericGrade)) {
+      return NextResponse.json(
+        { success: false, error: '"grade" debe ser numérico' },
+        { status: 400 }
+      );
+    }
+
+    
+    if (isCollaborative) {
+      if (!sessionId || reflexionId) {
+        return NextResponse.json(
+          { success: false,
+            error: 'Calificación colaborativa: "sessionId" obligatorio y "reflexionId" debe ser nulo' },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (!reflexionId || sessionId) {
+        return NextResponse.json(
+          { success: false,
+            error: 'Calificación individual: "reflexionId" obligatorio y "sessionId" debe ser nulo' },
+          { status: 400 }
+        );
+      }
+    }
+
+    
+    const { rowCount: cfgOK } = await client.query(
+      `SELECT 1 FROM tps_configurations
+        WHERE id = $1 AND moodle_user_id = $2`,
+      [configId, moodleUserId]
+    );
+
+    if (!cfgOK) {
+      return NextResponse.json(
+        { success: false, error: 'Configuración no autorizada' },
+        { status: 403 }
+      );
+    }
+
+    
+    await client.query('BEGIN');
+
+    if (isCollaborative) {
+      // ─── sesión colaborativa ───
+      const { rowCount } = await client.query(
+        `SELECT 1 FROM gradebook WHERE id_sesion_colaborativa = $1`,
+        [sessionId]
+      );
+
+      if (rowCount) {
+        await client.query(
+          `UPDATE gradebook
+             SET nota = $1,
+                 comentario = $2,
+                 fecha_calificacion = CURRENT_TIMESTAMP
+           WHERE id_sesion_colaborativa = $3`,
+          [numericGrade, comment ?? '', sessionId]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO gradebook
+             (id_sesion_colaborativa, id_reflexion, nota, comentario, calificado_por)
+           VALUES ($1, NULL, $2, $3, $4)`,
+          [sessionId, numericGrade, comment ?? '', moodleUserId]
+        );
+      }
+    } else {
+      // ─── reflexión individual ───
+      const { rowCount } = await client.query(
+        `SELECT 1 FROM gradebook WHERE id_reflexion = $1`,
+        [reflexionId]
+      );
+
+      if (rowCount) {
+        await client.query(
+          `UPDATE gradebook
+             SET nota = $1,
+                 comentario = $2,
+                 fecha_calificacion = CURRENT_TIMESTAMP
+           WHERE id_reflexion = $3`,
+          [numericGrade, comment ?? '', reflexionId]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO gradebook
+             (id_reflexion, id_sesion_colaborativa, nota, comentario, calificado_por)
+           VALUES ($1, NULL, $2, $3, $4)`,
+          [reflexionId, numericGrade, comment ?? '', moodleUserId]
+        );
+      }
+    }
+
+    await client.query('COMMIT');          // la nota está segura
+
+    
+    let moodleSync: MoodleSyncResult = null;
+
+    if (studentId && moodleAssignmentId) {
+      const moodleUrl =
+        process.env.NEXT_PUBLIC_MOODLE_URL ?? 'http://localhost:8888/moodle401';
+      const apiUrl = `${moodleUrl}/webservice/rest/server.php`;
+
+      
+      const params = new URLSearchParams({
+        wstoken: moodleToken,
+        wsfunction: 'mod_assign_save_grades',
+        moodlewsrestformat: 'json',
+        assignmentid: String(moodleAssignmentId),
+        'grades[0][userid]':  String(studentId),
+        'grades[0][grade]':   String(numericGrade),
+        'grades[0][attemptnumber]': '-1',
+        'grades[0][addattempt]':    '1',
+        'grades[0][workflowstate]': 'graded',
+        applytoall: '0'
+      });
+
+      if (comment) {
+        const html = `<p>${comment.replace(/\n/g, '<br/>')}</p>`;
+        params.append(
+          'grades[0][plugindata][assignfeedbackcomments_editor][text]', html
+        );
+        params.append(
+          'grades[0][plugindata][assignfeedbackcomments_editor][format]', '1'
+        ); // HTML
+      }
+
+      try {
+        
+        const res  = await fetch(`${apiUrl}?${params.toString()}`, { method: 'GET' });
+        const body = await res.text();
+
+        if (!res.ok || body.includes('exception')) {
+          await client.query(
+            `INSERT INTO moodle_grade_sync
+               (student_id, assignment_id, grade, sync_status, sync_message, feedback)
+             VALUES ($1,$2,$3,'error',$4,$5)`,
+            [studentId, moodleAssignmentId, numericGrade, body.slice(0,255), comment ?? '']
+          );
+          moodleSync = { success: false, message: 'Error al enviar calificación a Moodle' };
+        } else {
+          await client.query(
+            `INSERT INTO moodle_grade_sync
+               (student_id, assignment_id, grade, sync_status, sync_message, feedback, moodle_response)
+             VALUES ($1,$2,$3,'success','Enviado',$4,$5)`,
+            [studentId, moodleAssignmentId, numericGrade, comment ?? '', body]
+          );
+          moodleSync = { success: true, message: 'Calificación enviada a Moodle' };
+        }
+      } catch (err: unknown) {
+        await client.query(
+          `INSERT INTO moodle_grade_sync
+             (student_id, assignment_id, grade, sync_status, sync_message, feedback)
+           VALUES ($1,$2,$3,'network_error',$4,$5)`,
+          [studentId, moodleAssignmentId, numericGrade, String(err).slice(0,255), comment ?? '']
+        );
+        moodleSync = { success: false, message: 'No se pudo conectar a Moodle' };
+      }
+    }
+
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Calificación guardada exitosamente',
+      moodleSync
+    });
+
+  } catch (err: unknown) {
+    await client.query('ROLLBACK').catch(() => {});  // por si BEGIN nunca se ejecutó
+    console.error('Error al guardar calificación:', err);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Error al guardar calificación',
+        details: err instanceof Error ? err.message : String(err)
+      },
+      { status: 500 }
+    );
+  } finally {
+    client.release();
+  }
+}*/
+// src/app/api/admin/grade/route.ts
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { pool } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';   // Next 13+: siempre SSR
+
+type MoodleSyncResult = { success: boolean; message: string; details?: string } | null;
 
 export async function POST(request: Request) {
   const client = await pool.connect();
@@ -543,7 +772,8 @@ export async function POST(request: Request) {
       });
 
       if (comment) {
-        const html = `<p>${comment.replace(/\n/g, '<br/>')}</p>`;
+        // Convertir el comentario a formato HTML
+        const html = `<div>${comment.replace(/\n/g, '<br/>')}</div>`;
         params.append(
           'grades[0][plugindata][assignfeedbackcomments_editor][text]', html
         );
@@ -553,35 +783,67 @@ export async function POST(request: Request) {
       }
 
       try {
-        /* GET: misma forma que tu llamada exitosa */
-        const res  = await fetch(`${apiUrl}?${params.toString()}`, { method: 'GET' });
-        const body = await res.text();
+        console.log('Enviando calificación a Moodle:', apiUrl);
+        console.log('Parámetros:', [...params.entries()].reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {}));
 
-        if (!res.ok || body.includes('exception')) {
+        /* POST: más confiable para datos grandes */
+        const res = await fetch(apiUrl, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params 
+        });
+        
+        const responseText = await res.text();
+        let responseData;
+        
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (e) {
+          responseData = responseText;
+        }
+
+        if (!res.ok || (responseData && responseData.exception)) {
+          const errorMessage = responseData?.message || responseData?.error || responseText;
+          console.error('Error en respuesta de Moodle:', errorMessage);
+          
           await client.query(
             `INSERT INTO moodle_grade_sync
                (student_id, assignment_id, grade, sync_status, sync_message, feedback)
              VALUES ($1,$2,$3,'error',$4,$5)`,
-            [studentId, moodleAssignmentId, numericGrade, body.slice(0,255), comment ?? '']
+            [studentId, moodleAssignmentId, numericGrade, errorMessage.slice(0,255), comment ?? '']
           );
-          moodleSync = { success: false, message: 'Error al enviar calificación a Moodle' };
+          
+          moodleSync = { 
+            success: false, 
+            message: 'Error al enviar calificación a Moodle', 
+            details: errorMessage
+          };
         } else {
           await client.query(
             `INSERT INTO moodle_grade_sync
                (student_id, assignment_id, grade, sync_status, sync_message, feedback, moodle_response)
-             VALUES ($1,$2,$3,'success','Enviado',$4,$5)`,
-            [studentId, moodleAssignmentId, numericGrade, comment ?? '', body]
+             VALUES ($1,$2,$3,'success','Enviado a Moodle correctamente',$4,$5)`,
+            [studentId, moodleAssignmentId, numericGrade, comment ?? '', responseText]
           );
-          moodleSync = { success: true, message: 'Calificación enviada a Moodle' };
+          
+          moodleSync = { success: true, message: 'Calificación enviada a Moodle correctamente' };
         }
       } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error('Error al sincronizar con Moodle:', errorMsg);
+        
         await client.query(
           `INSERT INTO moodle_grade_sync
              (student_id, assignment_id, grade, sync_status, sync_message, feedback)
            VALUES ($1,$2,$3,'network_error',$4,$5)`,
-          [studentId, moodleAssignmentId, numericGrade, String(err).slice(0,255), comment ?? '']
+          [studentId, moodleAssignmentId, numericGrade, errorMsg.slice(0,255), comment ?? '']
         );
-        moodleSync = { success: false, message: 'No se pudo conectar a Moodle' };
+        
+        moodleSync = { 
+          success: false, 
+          message: 'No se pudo conectar a Moodle',
+          details: errorMsg
+        };
       }
     }
 
