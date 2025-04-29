@@ -260,7 +260,7 @@ export async function POST(request: Request) {
         [sessionId]
       );
       
-      if (existingGrade.rowCount > 0) {
+      if ((existingGrade.rowCount ?? 0) > 0) {
         // Actualizar calificación existente
         await client.query(
           `UPDATE gradebook
@@ -298,7 +298,7 @@ export async function POST(request: Request) {
         [reflexionId]
       );
       
-      if (existingGrade.rowCount > 0) {
+      if ((existingGrade.rowCount ?? 0) > 0) {
         // Actualizar calificación existente
         await client.query(
           `UPDATE gradebook
