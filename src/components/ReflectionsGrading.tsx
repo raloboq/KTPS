@@ -382,6 +382,7 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
   );
 }*/
 // src/components/ReflectionsGrading.tsx
+// src/components/ReflectionsGrading.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -601,7 +602,6 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
       <div className={styles.activityInfo}>
         <p><strong>Curso:</strong> {data.activity?.course_name || 'N/A'}</p>
         <p><strong>Asignación:</strong> {data.activity?.assignment_name || 'N/A'}</p>
-        <p><strong>ID Asignación Moodle:</strong> {data.activity?.moodle_assignment_id || 'No disponible'}</p>
         <p><strong>Descripción:</strong> {data.activity?.activity_description || 'Sin descripción'}</p>
       </div>
       
@@ -650,7 +650,6 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
                     <tr key={`${participant.userName}-${participant.reflexion.id}`}>
                       <td>
                         {participant.userName}
-                        {participant.moodleUserId && <div className={styles.userIdInfo}>ID Moodle: {participant.moodleUserId}</div>}
                       </td>
                       <td>{new Date(participant.reflexion.createdAt).toLocaleString()}</td>
                       <td>
@@ -663,7 +662,7 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
                       </td>
                       <td>
                         {participant.reflexion.calificacion !== null 
-                          ? `${participant.reflexion.calificacion}/10` 
+                          ? `${participant.reflexion.calificacion}/50` 
                           : 'Sin calificar'}
                       </td>
                       <td>
@@ -711,10 +710,7 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
                   <strong>Participantes:</strong> {session.participants.map((p: any) => p.userName).join(', ')}
                 </p>
                 <p>
-                  <strong>ID principal para calificación:</strong> {session.primaryMoodleUserId || 'No disponible'}
-                </p>
-                <p>
-                  <strong>Calificación:</strong> {session.calificacion ? `${session.calificacion.nota}/10` : 'Sin calificar'}
+                  <strong>Calificación:</strong> {session.calificacion ? `${session.calificacion.nota}/50` : 'Sin calificar'}
                   {session.calificacion?.comentario && (
                     <><br /><strong>Comentario:</strong> {session.calificacion.comentario}</>
                   )}
@@ -776,13 +772,13 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
             
             <form onSubmit={handleGradeSubmit}>
               <div className={styles.formGroup}>
-                <label htmlFor="grade">Calificación (0-10):</label>
+                <label htmlFor="grade">Calificación (0-50):</label>
                 <input
                   type="number"
                   id="grade"
                   name="grade"
                   min="0"
-                  max="10"
+                  max="50"
                   step="0.1"
                   value={gradeForm.grade}
                   onChange={handleGradeChange}
@@ -801,22 +797,6 @@ export default function ReflectionsGrading({ configId }: { configId: number }) {
                   className={styles.commentInput}
                   rows={4}
                 />
-              </div>
-              
-              <div className={styles.moodleSyncInfo}>
-                <p>
-                  <strong>ID de Moodle del estudiante:</strong> {gradeForm.studentId || 'No disponible'}
-                </p>
-                <p>
-                  <strong>ID de asignación Moodle:</strong> {data?.activity?.moodle_assignment_id || 'No disponible'}
-                </p>
-                <p>
-                  <strong>Estado de sincronización:</strong> {
-                    gradeForm.studentId && data?.activity?.moodle_assignment_id
-                      ? 'La calificación se sincronizará con Moodle'
-                      : 'No hay información suficiente para sincronizar con Moodle'
-                  }
-                </p>
               </div>
               
               <div className={styles.formActions}>
