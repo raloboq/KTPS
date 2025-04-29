@@ -57,9 +57,16 @@ export async function GET(
     for (const sesion of sessionesResult.rows) {
       // Obtener participantes
       const participantesResult = await pool.query(
-        `SELECT id_participante, nombre_usuario, fecha_union, fecha_salida
-         FROM participantes_colaborativos
-         WHERE id_sesion_colaborativa = $1`,
+        `SELECT pc.id_participante, pc.nombre_usuario, pc.fecha_union, pc.fecha_salida, 
+                s.studentId as moodle_user_id
+         FROM participantes_colaborativos pc
+         LEFT JOIN (
+           SELECT nombre_usuario, studentId 
+           FROM student_sessions 
+           WHERE nombre_usuario IS NOT NULL AND studentId IS NOT NULL
+           GROUP BY nombre_usuario, studentId
+         ) s ON pc.nombre_usuario = s.nombre_usuario
+         WHERE pc.id_sesion_colaborativa = $1`,
         [sesion.id_sesion_colaborativa]
       );
       
@@ -80,22 +87,35 @@ export async function GET(
         // Buscar la reflexión del participante
         const reflexionResult = await pool.query(
           `SELECT r.id_reflexion, r.contenido, r.fecha_creacion, s.id_sesion, 
-                  CASE WHEN g.nota IS NOT NULL THEN g.nota ELSE NULL END as calificacion
+                  g.nota as calificacion, g.comentario,
+                  ss.studentId as moodle_user_id
            FROM reflexiones r
            JOIN sesiones s ON r.id_sesion = s.id_sesion
            LEFT JOIN gradebook g ON r.id_reflexion = g.id_reflexion
+           LEFT JOIN (
+             SELECT nombre_usuario, studentId 
+             FROM student_sessions 
+             WHERE nombre_usuario IS NOT NULL AND studentId IS NOT NULL
+             GROUP BY nombre_usuario, studentId
+           ) ss ON r.usuario = ss.nombre_usuario
            WHERE r.usuario = $1 AND s.tps_configuration_id = $2
            ORDER BY r.fecha_creacion DESC
            LIMIT 1`,
           [participante.nombre_usuario, configId]
         );
         
+        // Intentar obtener el moodle_user_id ya sea de la consulta reflexión o del participante
+        const moodleUserId = reflexionResult.rows.length > 0 && reflexionResult.rows[0].moodle_user_id
+          ? reflexionResult.rows[0].moodle_user_id 
+          : participante.moodle_user_id;
+        
         const reflexion = reflexionResult.rows.length > 0 ? {
           id: reflexionResult.rows[0].id_reflexion,
           content: reflexionResult.rows[0].contenido,
           createdAt: reflexionResult.rows[0].fecha_creacion,
           sessionId: reflexionResult.rows[0].id_sesion,
-          calificacion: reflexionResult.rows[0].calificacion
+          calificacion: reflexionResult.rows[0].calificacion,
+          comentario: reflexionResult.rows[0].comentario
         } : null;
         
         participantes.push({
@@ -103,6 +123,7 @@ export async function GET(
           userName: participante.nombre_usuario,
           joinedAt: participante.fecha_union,
           leftAt: participante.fecha_salida,
+          moodleUserId: moodleUserId,  // Agregar el ID de Moodle aquí
           reflexion
         });
       }
@@ -120,6 +141,13 @@ export async function GET(
         comentario: gradingResult.rows[0].comentario
       } : null;
       
+      // Intentar obtener al menos un ID de Moodle válido entre los participantes para la calificación colaborativa
+      const moodleUserIds = participantes
+        .filter(p => p.moodleUserId)
+        .map(p => p.moodleUserId);
+      
+      const primaryMoodleUserId = moodleUserIds.length > 0 ? moodleUserIds[0] : null;
+      
       sesiones.push({
         id: sesion.id_sesion_colaborativa,
         roomId: sesion.id_room,
@@ -127,6 +155,7 @@ export async function GET(
         startedAt: sesion.fecha_inicio,
         endedAt: sesion.fecha_fin,
         participants: participantes,
+        primaryMoodleUserId: primaryMoodleUserId,  // Agregar el ID principal para calificación colaborativa
         collaboration: capturaResult.rows.length > 0 ? {
           id: capturaResult.rows[0].id_captura,
           content: capturaResult.rows[0].contenido,
@@ -160,6 +189,18 @@ export async function GET(
     );
     
     const activityInfo = activityResult.rows.length > 0 ? activityResult.rows[0] : null;
+    
+    // Agregar información de depuración para ver la estructura completa
+    console.log('Enviando datos de actividad:', JSON.stringify({
+      activity: activityInfo,
+      sessions: sesiones.map(s => ({
+        ...s,
+        participants: s.participants.map(p => ({
+          ...p,
+          moodleUserId: p.moodleUserId
+        }))
+      }))
+    }, null, 2));
     
     return NextResponse.json({ 
       success: true, 

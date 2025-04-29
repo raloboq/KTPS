@@ -754,83 +754,82 @@ export async function POST(request: Request) {
 
     if (studentId && moodleAssignmentId) {
       const moodleUrl =
-        process.env.NEXT_PUBLIC_MOODLE_URL ?? 'http://localhost:8888/moodle401';
+        process.env.NEXT_PUBLIC_MOODLE_URL ?? 'https://virtual.konradlorenz.edu.co';
       const apiUrl = `${moodleUrl}/webservice/rest/server.php`;
 
-      /* 5.1 Parámetros estilo mod_assign_save_grades */
-      const params = new URLSearchParams({
-        wstoken: moodleToken,
-        wsfunction: 'mod_assign_save_grades',
-        moodlewsrestformat: 'json',
-        assignmentid: String(moodleAssignmentId),
-        'grades[0][userid]':  String(studentId),
-        'grades[0][grade]':   String(numericGrade),
-        'grades[0][attemptnumber]': '-1',
-        'grades[0][addattempt]':    '1',
-        'grades[0][workflowstate]': 'graded',
-        applytoall: '0'
-      });
+      // Crear FormData para enviar
+      const formData = new URLSearchParams();
+      formData.append('wstoken', moodleToken);
+      formData.append('wsfunction', 'mod_assign_save_grades');
+      formData.append('moodlewsrestformat', 'json');
+      formData.append('assignmentid', String(moodleAssignmentId));
+      formData.append('grades[0][userid]', String(studentId));
+      formData.append('grades[0][grade]', String(numericGrade));
+      formData.append('grades[0][attemptnumber]', '-1');
+      formData.append('grades[0][addattempt]', '1');
+      formData.append('grades[0][workflowstate]', 'graded');
+      formData.append('applytoall', '0');
 
+      // Añadir comentario si existe
       if (comment) {
-        // Convertir el comentario a formato HTML
-        const html = `<div>${comment.replace(/\n/g, '<br/>')}</div>`;
-        params.append(
-          'grades[0][plugindata][assignfeedbackcomments_editor][text]', html
-        );
-        params.append(
-          'grades[0][plugindata][assignfeedbackcomments_editor][format]', '1'
-        ); // HTML
+        const htmlComment = `<div>${comment.replace(/\n/g, '<br/>')}</div>`;
+        formData.append('grades[0][plugindata][assignfeedbackcomments_editor][text]', htmlComment);
+        formData.append('grades[0][plugindata][assignfeedbackcomments_editor][format]', '1');
       }
 
       try {
         console.log('Enviando calificación a Moodle:', apiUrl);
-        console.log('Parámetros:', [...params.entries()].reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {}));
+        console.log('Parámetros:', Object.fromEntries(formData));
 
-        /* POST: más confiable para datos grandes */
-        const res = await fetch(apiUrl, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: params 
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData
         });
         
         const responseText = await res.text();
-        let responseData;
+        console.log('Respuesta de Moodle:', responseText);
         
-        try {
-          responseData = JSON.parse(responseText);
-        } catch (e) {
-          responseData = responseText;
-        }
-
-        if (!res.ok || (responseData && responseData.exception)) {
-          const errorMessage = responseData?.message || responseData?.error || responseText;
-          console.error('Error en respuesta de Moodle:', errorMessage);
+        // Respuesta vacía o null significa éxito
+        if (!responseText || responseText === 'null') {
+          await client.query(
+            `INSERT INTO moodle_grade_sync
+               (student_id, assignment_id, grade, sync_status, sync_message, feedback)
+             VALUES ($1,$2,$3,'success','Calificación enviada a Moodle exitosamente',$4)`,
+            [studentId, moodleAssignmentId, numericGrade, comment ?? '']
+          );
+          
+          moodleSync = { success: true, message: 'Calificación enviada a Moodle correctamente' };
+        } else {
+          // Intentar parsear la respuesta
+          let errorMsg = responseText;
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMsg = errorData.message || errorData.error || responseText;
+          } catch (e) {
+            // Si no es JSON, usar el texto tal cual
+          }
+          
+          console.error('Error en respuesta de Moodle:', errorMsg);
           
           await client.query(
             `INSERT INTO moodle_grade_sync
                (student_id, assignment_id, grade, sync_status, sync_message, feedback)
              VALUES ($1,$2,$3,'error',$4,$5)`,
-            [studentId, moodleAssignmentId, numericGrade, errorMessage.slice(0,255), comment ?? '']
+            [studentId, moodleAssignmentId, numericGrade, errorMsg.slice(0,255), comment ?? '']
           );
           
           moodleSync = { 
             success: false, 
             message: 'Error al enviar calificación a Moodle', 
-            details: errorMessage
+            details: errorMsg
           };
-        } else {
-          await client.query(
-            `INSERT INTO moodle_grade_sync
-               (student_id, assignment_id, grade, sync_status, sync_message, feedback, moodle_response)
-             VALUES ($1,$2,$3,'success','Enviado a Moodle correctamente',$4,$5)`,
-            [studentId, moodleAssignmentId, numericGrade, comment ?? '', responseText]
-          );
-          
-          moodleSync = { success: true, message: 'Calificación enviada a Moodle correctamente' };
         }
-      } catch (err: unknown) {
+      } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error('Error al sincronizar con Moodle:', errorMsg);
+        console.error('Error al comunicarse con Moodle:', errorMsg);
         
         await client.query(
           `INSERT INTO moodle_grade_sync
@@ -841,7 +840,7 @@ export async function POST(request: Request) {
         
         moodleSync = { 
           success: false, 
-          message: 'No se pudo conectar a Moodle',
+          message: 'No se pudo conectar a Moodle', 
           details: errorMsg
         };
       }
