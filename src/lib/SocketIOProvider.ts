@@ -441,7 +441,12 @@ export class SocketIOProvider {
     this.awareness = new SocketAwareness(this);
     
     // Asegurar que tenemos un protocolo y host válidos
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://37.27.189.148';
+    //const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 'http://37.27.189.148';
+    // Detecta el protocolo actual y usa la misma IP/host
+const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER || 
+(typeof window !== 'undefined' ? 
+ `${window.location.protocol}//${window.location.hostname}` : 
+ 'https://ktps.renelobo.com');
     console.log('Conectando a Socket.IO en:', socketUrl, {
       documentId,
       userName,
