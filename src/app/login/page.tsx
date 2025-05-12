@@ -33,11 +33,27 @@ export default function LoginPage() {
         throw new Error(userData.error);
       }
 
-      if (!userData.username) {
+      /*if (!userData.username) {
         throw new Error('No se encontró ningún usuario con ese correo electrónico');
       }
 
-      const username = userData.username;
+      const username = userData.username;*/
+
+      // Extract username from email if username field is not present
+let username;
+if (userData.username) {
+  username = userData.username;
+} else if (userData.email) {
+  // Extract username from email (part before @konradlorenz.edu.co)
+  const emailParts = userData.email.split('@');
+  if (emailParts.length === 2) {
+    username = emailParts[0];
+  } else {
+    throw new Error('Formato de correo electrónico inválido');
+  }
+} else {
+  throw new Error('No se encontró ningún usuario con ese correo electrónico');
+}
       
       // Ahora hacemos login con el username obtenido
       const moodleUrl = process.env.NEXT_PUBLIC_MOODLE_URL || 'http://localhost:8888/moodle401';
