@@ -156,7 +156,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.log('Error completo de Moodle:', error);
+      console.log('Error completo de Moodle1:', error);
       console.error('Error en la respuesta de Moodle:', error);
       return NextResponse.json(
         { error: 'Error al autenticar con Moodle' },
@@ -168,6 +168,7 @@ export async function POST(request: Request) {
     const data = await response.json();
     
     if (data.error) {
+      console.log('Error completo de Moodle2:', data.error);
       return NextResponse.json(
         { error: data.error },
         { status: 401 }
@@ -176,7 +177,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error en el proceso de login de estudiante:', error);
+    console.log('Error en el proceso de login de estudiante:', error);
     return NextResponse.json(
       { error: 'Error en el proceso de autenticación' },
       { status: 500 }
