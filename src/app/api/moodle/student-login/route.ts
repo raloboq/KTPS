@@ -156,6 +156,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const error = await response.text();
+      console.log('Error completo de Moodle:', error);
       console.error('Error en la respuesta de Moodle:', error);
       return NextResponse.json(
         { error: 'Error al autenticar con Moodle' },
