@@ -257,37 +257,116 @@ export default function StudentLoginPage() {
 
       const loginData = await loginResponse.json();
 
-      if (loginData.error) {
-        throw new Error(loginData.error);
-      }
-
-      if (loginData.token) {
-        // Guardar el token en una cookie
-        Cookies.set('studentMoodleToken', loginData.token, { secure: false, sameSite: 'strict' });
-        
-        // Guardar datos del estudiante
-        let usernameToStore = userData.username || identifier;
-        let fullnameToStore = userData.fullname || 'Estudiante';
-        let emailToStore = userData.email || '';
-        let studentIdToStore = userData.id ? userData.id.toString() : '';
-        
-        Cookies.set('studentUsername', usernameToStore, { secure: false, sameSite: 'strict' });
-        Cookies.set('studentFullName', fullnameToStore, { secure: false, sameSite: 'strict' });
-        Cookies.set('studentEmail', emailToStore, { secure: false, sameSite: 'strict' });
-        Cookies.set('studentId', studentIdToStore, { secure: false, sameSite: 'strict' });
-        
-        // Redirigir a la página de selección de actividad
-        router.push('/activity-select');
-      } else {
-        throw new Error('No se recibió un token válido');
-      }
-    } catch (error) {
-      console.error('Error en el login de estudiante:', error);
-      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
+    if (loginData.error) {
+      throw new Error(loginData.error);
     }
-  };
+
+    if (loginData.token) {
+      // Guardar el token en una cookie
+      Cookies.set('studentMoodleToken', loginData.token, { 
+        secure: false, 
+        sameSite: 'strict',
+        path: '/'
+      });
+      
+      // OPCIÓN 3: Obtener detalles del usuario con el token recién obtenido
+      const moodleUrl = process.env.NEXT_PUBLIC_MOODLE_URL || 'http://localhost:8888/moodle401';
+      const userDetailsUrl = new URL(`${moodleUrl}/webservice/rest/server.php`);
+      userDetailsUrl.searchParams.append('wstoken', loginData.token);
+      userDetailsUrl.searchParams.append('wsfunction', 'core_webservice_get_site_info');
+      userDetailsUrl.searchParams.append('moodlewsrestformat', 'json');
+
+      try {
+        console.log('Solicitando detalles de usuario con token:', loginData.token.substring(0, 10) + '...');
+        const userDetailsResponse = await fetch(userDetailsUrl.toString());
+        
+        if (userDetailsResponse.ok) {
+          const userInfo = await userDetailsResponse.json();
+          console.log('Información de usuario obtenida:', userInfo);
+          
+          // Ahora tenemos el ID de usuario de Moodle y otros datos
+          if (userInfo.userid) {
+            Cookies.set('studentId', userInfo.userid.toString(), {
+              secure: false,
+              sameSite: 'strict',
+              path: '/'
+            });
+            console.log('ID de usuario obtenido correctamente:', userInfo.userid);
+            
+            // También podemos actualizar otros datos si están disponibles
+            if (userInfo.username) {
+              Cookies.set('studentUsername', userInfo.username, {
+                secure: false,
+                sameSite: 'strict',
+                path: '/'
+              });
+            }
+            
+            if (userInfo.fullname) {
+              Cookies.set('studentFullName', userInfo.fullname, {
+                secure: false,
+                sameSite: 'strict',
+                path: '/'
+              });
+            }
+          }
+        } else {
+          console.error('Error al obtener detalles de usuario:', await userDetailsResponse.text());
+        }
+      } catch (e) {
+        console.error('Excepción al obtener detalles de usuario:', e);
+        // Podemos continuar incluso si esto falla
+      }
+      
+      // Continuar con el código existente para establecer otras cookies
+      // usando userData si está disponible
+      let usernameToStore = userData.username || identifier;
+      let fullnameToStore = userData.fullname || 'Estudiante';
+      let emailToStore = userData.email || '';
+      
+      // Solo establecer estas cookies si no se obtuvieron de core_webservice_get_site_info
+      if (!Cookies.get('studentUsername')) {
+        Cookies.set('studentUsername', usernameToStore, { 
+          secure: false, 
+          sameSite: 'strict',
+          path: '/'
+        });
+      }
+      
+      if (!Cookies.get('studentFullName')) {
+        Cookies.set('studentFullName', fullnameToStore, { 
+          secure: false, 
+          sameSite: 'strict',
+          path: '/'
+        });
+      }
+      
+      Cookies.set('studentEmail', emailToStore, { 
+        secure: false, 
+        sameSite: 'strict',
+        path: '/'
+      });
+      
+      // Para depuración - confirmar cookies establecidas
+      console.log('Cookies establecidas:', {
+        token: Cookies.get('studentMoodleToken')?.substring(0, 10) + '...',
+        username: Cookies.get('studentUsername'),
+        id: Cookies.get('studentId'),
+        fullname: Cookies.get('studentFullName')
+      });
+      
+      // Redirigir a la página de selección de actividad
+      router.push('/activity-select');
+    } else {
+      throw new Error('No se recibió un token válido');
+    }
+  } catch (error) {
+    console.error('Error en el login de estudiante:', error);
+    setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className={styles.container}>
